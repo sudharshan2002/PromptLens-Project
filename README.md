@@ -1,8 +1,8 @@
 # 🔍 PromptLens: Making Generative AI Explain Itself
 
 > **Final Year Research Project** > **Author:** Sudharshan Ravichandran  
-> **Institution:** Indian Institute of Technology (IIT)  
-> **Year:** 2024–2025
+> **Institution:**  (IIT)  
+> **Year:** 2025-2026
 
 ---
 

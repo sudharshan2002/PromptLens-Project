@@ -1,6 +1,3 @@
-Here is the complete `README.md` file content in a single code block, ready to copy and paste.
-
-```markdown
 # 🔍 PromptLens: Making Generative AI Explain Itself
 
 > **Final Year Research Project** > **Author:** Sudharshan Ravichandran  

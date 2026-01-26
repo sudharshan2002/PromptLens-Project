@@ -1,4 +1,12 @@
-node_modules
-dist
-.vercel
+# env
 .env
+backend/.env
+venv/
+backend/venv/
+
+# node
+node_modules/
+
+# python
+__pycache__/
+*.pyc

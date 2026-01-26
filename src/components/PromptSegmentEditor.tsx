@@ -369,56 +369,60 @@ export function PromptSegmentEditor({
                       </button>
                     </div>
                   ) : (
-                    <button
-                      className="px-3.5 py-2 rounded-xl liquid-transition transform hover:scale-105 active:scale-95 fade-in relative overflow-hidden"
-                      style={{ 
-                        backgroundColor: segment.metadata.color + (isHovered ? '25' : '15'),
-                        color: segment.metadata.color,
-                        border: `1.5px solid ${segment.metadata.color}${isHovered ? '60' : '30'}`,
-                        fontWeight: 500,
-                        fontSize: '0.8125rem',
-                        animationDelay: `${index * 0.05}s`,
-                        boxShadow: isHovered 
-                          ? `0 4px 12px ${segment.metadata.color}30` 
-                          : `0 1px 3px ${segment.metadata.color}15`
-                      }}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span 
-                          className="w-2 h-2 rounded-full" 
-                          style={{ background: segment.metadata.color }}
-                        />
-                        {segment.text}
-                      </span>
-                      
-                      {/* Edit/Remove overlay on hover */}
-                      <div 
-                        className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ 
-                          background: 'rgba(0,0,0,0.7)',
-                          borderRadius: '12px'
-                        }}
-                      >
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditStart(segment);
-                          }}
-                          className="p-1 rounded hover:bg-white/20"
-                        >
-                          <Edit3 size={12} style={{ color: '#fff' }} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveSegment(segment.id);
-                          }}
-                          className="p-1 rounded hover:bg-white/20"
-                        >
-                          <X size={12} style={{ color: '#fff' }} />
-                        </button>
-                      </div>
-                    </button>
+                    <div
+  role="button"
+  tabIndex={0}
+  className="px-3.5 py-2 rounded-xl liquid-transition transform hover:scale-105 active:scale-95 fade-in relative overflow-hidden cursor-pointer"
+  style={{ 
+    backgroundColor: segment.metadata.color + (isHovered ? '25' : '15'),
+    color: segment.metadata.color,
+    border: `1.5px solid ${segment.metadata.color}${isHovered ? '60' : '30'}`,
+    fontWeight: 500,
+    fontSize: '0.8125rem',
+    animationDelay: `${index * 0.05}s`,
+    boxShadow: isHovered 
+      ? `0 4px 12px ${segment.metadata.color}30` 
+      : `0 1px 3px ${segment.metadata.color}15`
+  }}
+>
+  <span className="flex items-center gap-2 pointer-events-none">
+    <span 
+      className="w-2 h-2 rounded-full" 
+      style={{ background: segment.metadata.color }}
+    />
+    {segment.text}
+  </span>
+
+  {/* Edit / Remove overlay */}
+  <div 
+    className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+    style={{ 
+      background: 'rgba(0,0,0,0.7)',
+      borderRadius: '12px'
+    }}
+  >
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleEditStart(segment);
+      }}
+      className="p-1 rounded hover:bg-white/20"
+    >
+      <Edit3 size={12} style={{ color: '#fff' }} />
+    </button>
+
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleRemoveSegment(segment.id);
+      }}
+      className="p-1 rounded hover:bg-white/20"
+    >
+      <X size={12} style={{ color: '#fff' }} />
+    </button>
+  </div>
+</div>
+
                   )}
 
                   {/* Tooltip with segment metadata */}

@@ -1,234 +1,216 @@
-PromptLens
+Here is the complete `README.md` file content in a single code block, ready to copy and paste.
 
-An Explainable Interface for Generative AI Systems
+```markdown
+# 🔍 PromptLens: Making Generative AI Explain Itself
 
-Author: Sudharshan Ravichandran
-Institution: IIT
-Degree: Undergraduate Research Project
-Year: 2024–2025
+> **Final Year Research Project** > **Author:** Sudharshan Ravichandran  
+> **Institution:** Indian Institute of Technology (IIT)  
+> **Year:** 2024–2025
 
-Abstract
+---
 
-PromptLens is a research prototype that explores explainability in modern generative AI systems. While large language and image generation models produce high-quality outputs, their internal decision-making processes remain opaque to end users. This project investigates whether interactive prompt decomposition and output-level explanations can improve user understanding, trust, and control over generative AI behaviour.
+## 🧠 Overview
 
-The system provides a web-based interface that segments user prompts into semantic components and visually links these components to generated outputs. PromptLens is designed as an experimental platform to support explainable AI (XAI) research in black-box generative models accessed via commercial APIs.
+**PromptLens** is a research-focused prototype that explores **explainability in generative AI systems**.
 
-Research Objectives
+While modern AI models can generate high-quality text and images, they rarely explain *why* a specific output was produced. This lack of transparency affects user trust, control, and effective use.
 
-The primary objectives of PromptLens are:
+PromptLens introduces an interactive interface that breaks user prompts into semantic segments and visually links these segments to generated outputs. The goal is not to expose internal model reasoning, but to study whether **perceived transparency** improves user understanding and trust.
 
-To explore explainability techniques for black-box generative AI systems
+---
 
-To visualise how different parts of a user prompt influence generated outputs
+## 🎯 Research Goals
 
-To study whether explanation interfaces improve user trust and prompt refinement
+- **Investigate** explainability techniques for black-box generative AI models.
+- **Visualise** how different prompt segments influence outputs.
+- **Support** prompt experimentation through *what-if* analysis.
+- **Measure** user trust and perceived understanding.
+- **Provide** a reusable platform for XAI and HCI research.
 
-To provide a reusable experimental platform for XAI research in generative contexts
+---
 
-Problem Statement
+## 🔬 Research Context
 
-Generative AI models such as large language models and diffusion-based image generators operate as black boxes. Users typically receive only final outputs, with no visibility into:
+PromptLens is designed as a **black-box explainability system**.
 
-Which parts of their prompt influenced specific outputs
+- **No access** to internal model weights or attention maps.
+- Explanations are **proxy-based and heuristic**.
+- Focus is on **user perception**, not ground-truth causality.
 
-Why the model interpreted the prompt in a particular way
+This approach reflects real-world constraints when working with closed-source commercial APIs such as OpenAI and Replicate.
 
-How modifying prompt structure changes results
+---
 
-This lack of transparency limits trust, usability, and effective human-AI collaboration. PromptLens addresses this problem by introducing an explainable interaction layer between the user and the generative model.
+## ✨ Key Features
 
-System Overview
+### 🧩 Prompt Segmentation
+- Automatic decomposition of prompts into semantic units.
+- Categories include: *Subject, Style, Context, Action, and Modifiers*.
+- Segments can be edited, removed, or reclassified interactively.
 
-PromptLens consists of a frontend explainability interface and a backend API layer that coordinates segmentation, generation, and explanation logic.
+### 📄 Explainable Text Generation
+- Sentence-level attribution to prompt segments.
+- Visual contribution indicators.
+- Interactive highlighting between input and output.
 
-High-level workflow
+### 🖼 Explainable Image Generation
+- Prompt-to-image influence mapping.
+- Approximate region-based explanations.
+- Focus on interpretability rather than pixel-level accuracy.
 
-User enters a prompt
+### 🔄 What-If Analysis
+- Compare original and modified prompts side by side.
+- Observe output changes and influence shifts.
 
-Prompt is segmented into semantic components
+### 📊 Trust & Feedback Metrics
+- User-rated understandability and usefulness.
+- Confidence scoring.
+- Session-based anonymous analytics.
 
-Segments are sent to the backend for generation
+---
 
-Generated output is analysed and mapped back to input segments
+## 🏗 System Architecture
 
-Explanations are visualised interactively in the UI
+```mermaid
+graph TD
+    A[User Browser] -->|React + TypeScript| B(Frontend Interface)
+    B -->|REST API| C{FastAPI Backend}
+    C -->|API Call| D[OpenAI Text]
+    C -->|API Call| E[Replicate Images]
 
-Key Features
-Prompt Segmentation
+```
 
-Automatic decomposition of prompts into semantic units
+---
 
-Categories include subject, style, context, modifier, and action
+## 🛠 Technology Stack
 
-Editable segments for user-driven refinement
+### Frontend
 
-Explainable Text Generation
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
 
-Sentence-level attribution to prompt segments
+### Backend
 
-Contribution scoring for each segment
+* Python 3.10+
+* FastAPI
+* Pydantic
+* spaCy
+* OpenAI API
+* Replicate API
 
-Interactive highlighting between input and output
+---
 
-Explainable Image Generation
+## 🚀 Running the Project Locally
 
-Prompt-to-image influence mapping
+### Prerequisites
 
-Region-based explanation overlays
+* Node.js 18+
+* Python 3.10+
+* Git
 
-Compositional analysis based on prompt structure
+### 1. Frontend Setup
 
-What-If Analysis
+```bash
+# Navigate to project folder
+cd promptlens/src
 
-Side-by-side comparison of original and modified prompts
-
-Impact analysis of prompt changes
-
-Output difference explanation
-
-Trust and Feedback Metrics
-
-User-rated understandability and usefulness
-
-Session-based interaction tracking
-
-Aggregated research metrics dashboard
-
-Architecture
-Frontend
-
-Interactive explainability interface
-
-Prompt editor with live segmentation
-
-Visual explanation panels
-
-Backend
-
-REST API built with FastAPI
-
-Prompt processing and segmentation services
-
-Generation and explanation orchestration
-
-Metrics and feedback collection
-
-External AI Services
-
-Text generation via OpenAI API
-
-Image generation via Replicate (Stable Diffusion)
-
-Technology Stack
-Frontend
-
-React
-
-TypeScript
-
-Vite
-
-Tailwind CSS
-
-Lucide Icons
-
-Recharts
-
-Backend
-
-Python
-
-FastAPI
-
-Pydantic
-
-spaCy / NLTK
-
-OpenAI API
-
-Replicate API
-
-Installation and Setup
-Prerequisites
-
-Node.js 18+
-
-Python 3.10+
-
-Git
-
-Clone Repository
-git clone https://github.com/sudharshan2002/promptlens.git
-cd promptlens
-
-Frontend
+# Install dependencies
 npm install
+
+# Run development server
 npm run dev
+# The app will run at http://localhost:5173
 
-Backend
+```
+
+### 2. Backend Setup
+
+```bash
 cd backend
+
+# Create virtual environment
 python -m venv venv
-venv\Scripts\activate   # Windows
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+# source venv/bin/activate
+
+# Install requirements
 pip install -r requirements.txt
+
+# Download NLP model for segmentation
 python -m spacy download en_core_web_sm
+
+# Run the server
 uvicorn app:app --reload --port 8000
+# The API will run at http://localhost:8000
 
-Configuration
+```
 
-Create a .env file inside the backend/ directory:
+### 3. Environment Variables (`.env`)
 
+Create a `.env` file in the `backend/` directory with the following keys:
+
+```env
 OPENAI_API_KEY=your_openai_api_key
 REPLICATE_API_TOKEN=your_replicate_api_token
 CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 
-Explainability Disclaimer
+```
 
-PromptLens does not access internal model weights, attention maps, or gradients. All explanations are proxy-based, derived from prompt segmentation, output comparison, and heuristic attribution techniques.
+---
 
-As a result:
+## ⚠️ Explainability Disclaimer
 
-Explanations represent approximations of model behaviour
+> **PromptLens does not provide true model explainability.**
 
-Attribution scores are not ground-truth model reasoning
+* All explanations are **approximations**.
+* Contribution scores are **heuristic**.
+* Image attention maps are **simulated**.
 
-Image attention visualisations are simulated
+This is intentional and aligned with applied XAI research on closed-source AI systems.
 
-This approach reflects real-world constraints when working with closed-source AI APIs and aligns with common practices in applied XAI research.
+---
 
-Research Limitations
+## 🧪 Limitations
 
-Black-box dependency on external APIs
+* Black-box API dependency.
+* English-only NLP pipeline.
+* Heuristic segmentation.
+* No long-term data persistence.
 
-Heuristic-based segmentation may misclassify edge cases
+---
 
-Image explanations are approximate
+## 📁 Project Structure
 
-English-only language support
+```text
+promptlens/
+├── src/            # React frontend
+├── backend/        # FastAPI backend
+├── public/         # Static assets
+├── README.md       # Project documentation
+└── ...
 
-Limited participant sample size for evaluation
+```
 
-Intended Use
+---
 
-This project is intended for:
+## 👤 Author
 
-Academic research and experimentation
+**Sudharshan Ravichandran** Final Year Undergraduate
 
-Explainable AI interface studies
+Informatics Institute of Technology
 
-Human-AI interaction research
+---
 
-Educational demonstrations
+## 📜 License
 
-It is not intended for production deployment.
+**MIT License** For academic and research use.
 
-License
+```
 
-MIT License
-This project is developed for academic research purposes.
-
-Author
-
-Sudharshan Ravichandran
-Undergraduate Researcher
-IIT
-Final Year Project (2024–2025)
+```

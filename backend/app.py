@@ -50,17 +50,17 @@ async def lifespan(app: FastAPI):
     
     # Check API keys
     openai_key = os.getenv("OPENAI_API_KEY", "")
-    replicate_key = os.getenv("REPLICATE_API_TOKEN", "")
+    replicate_key = os.getenv("HUGGINGFACE_API_TOKEN", "")
     
     if not openai_key or openai_key == "your_openai_api_key_here":
         print("⚠️  OpenAI API key not configured - text generation will use mock responses")
     else:
         print("✅ OpenAI API key configured")
     
-    if not replicate_key or replicate_key == "your_replicate_api_token_here":
-        print("⚠️  Replicate API token not configured - image generation will use mock responses")
+    if not replicate_key or replicate_key == "your_huggingface_api_token_here":
+        print("⚠️  HuggingFace API token not configured - image generation will use mock responses")
     else:
-        print("✅ Replicate API token configured")
+        print("✅ HuggingFace API token configured")
     
     yield
     
@@ -79,7 +79,7 @@ app = FastAPI(
 )
 
 # Configure CORS
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+cors_origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -217,8 +217,8 @@ async def generate_image_endpoint(request: ImageGenerateRequest):
     """
     try:
         # Check if we should use mock
-        api_token = os.getenv("REPLICATE_API_TOKEN", "")
-        use_mock = not api_token or api_token == "your_replicate_api_token_here"
+        api_token = os.getenv("HUGGINGFACE_API_TOKEN", "")
+        use_mock = not api_token or api_token == "your_huggingface_api_token_here"
         
         if use_mock:
             return await generate_image_mock(request)

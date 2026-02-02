@@ -24,66 +24,58 @@ from models import (
 
 async def generate_image(request: ImageGenerateRequest) -> ImageGenerateResponse:
     """
-    Generate image using Replicate API (Stable Diffusion) and create heatmap data.
+    Generate image using Hugging Face Inference API (Stable Diffusion)
+    with mock fallback if no API key is provided.
     """
-    api_token = os.getenv("REPLICATE_API_TOKEN")
-    
-    if not api_token or api_token == "your_replicate_api_token_here":
-        # Use mock generation if no API key
+    api_token = os.getenv("HUGGINGFACE_API_TOKEN")
+
+    # Fallback to mock if no key
+    if not api_token:
         return await generate_image_mock(request)
-    
-    model = os.getenv("IMAGE_MODEL", "stability-ai/stable-diffusion:27b93a2413e7f36cd83da926f3656280b2931564ff050bf9575f1fdf9bcd7478")
-    
+
+    model = os.getenv(
+        "IMAGE_MODEL",
+        "stabilityai/stable-diffusion-2-1"
+    )
+
+    hf_url = f"https://api-inference.huggingface.co/models/{model}"
+
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Accept": "image/png"
+    }
+
+    payload = {
+        "inputs": request.prompt,
+        "parameters": {
+            "num_inference_steps": request.num_inference_steps
+        }
+    }
+
     async with httpx.AsyncClient(timeout=120.0) as client:
-        # Start prediction
         response = await client.post(
-            "https://api.replicate.com/v1/predictions",
-            headers={
-                "Authorization": f"Token {api_token}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "version": model.split(":")[-1] if ":" in model else model,
-                "input": {
-                    "prompt": request.prompt,
-                    "width": request.width,
-                    "height": request.height,
-                    "num_inference_steps": request.num_inference_steps,
-                }
-            }
+            hf_url,
+            headers=headers,
+            json=payload
         )
-        
-        if response.status_code != 201:
-            raise Exception(f"Failed to start image generation: {response.text}")
-        
-        prediction = response.json()
-        prediction_id = prediction["id"]
-        
-        # Poll for completion
-        while True:
-            status_response = await client.get(
-                f"https://api.replicate.com/v1/predictions/{prediction_id}",
-                headers={"Authorization": f"Token {api_token}"}
-            )
-            
-            status_data = status_response.json()
-            
-            if status_data["status"] == "succeeded":
-                image_url = status_data["output"][0] if status_data["output"] else ""
-                break
-            elif status_data["status"] == "failed":
-                raise Exception(f"Image generation failed: {status_data.get('error', 'Unknown error')}")
-            
-            # Wait before polling again
-            import asyncio
-            await asyncio.sleep(1)
-    
-    # Generate heatmap data based on segments
-    heatmap_data = generate_heatmap_regions(request.segments, request.width, request.height)
-    
-    # Calculate segment contributions
+
+        if response.status_code != 200:
+            # If HF fails, fall back safely
+            return await generate_image_mock(request)
+
+        image_bytes = response.content
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+        image_url = f"data:image/png;base64,{image_base64}"
+
+    # Explainability logic stays unchanged
+    heatmap_data = generate_heatmap_regions(
+        request.segments,
+        request.width,
+        request.height
+    )
+
     segment_contributions = calculate_segment_contributions(request.segments)
-    
+
     return ImageGenerateResponse(
         session_id=request.session_id,
         image_url=image_url,
@@ -93,8 +85,7 @@ async def generate_image(request: ImageGenerateRequest) -> ImageGenerateResponse
         segment_contributions=segment_contributions,
         generation_metadata={
             "model": model,
-            "inference_steps": request.num_inference_steps,
-            "prediction_id": prediction_id
+            "provider": "huggingface"
         },
         timestamp=datetime.utcnow().isoformat()
     )

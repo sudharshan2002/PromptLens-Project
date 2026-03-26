@@ -1,11 +1,12 @@
-"""Shared helper functions for tokenization, scoring, and mock outputs."""
+"""Shared helper functions for tokenization, scoring, and provider helpers."""
 
 from __future__ import annotations
 
 from collections import Counter
+from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from typing import Iterable
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 import re
 from xml.sax.saxutils import escape
 
@@ -53,6 +54,82 @@ def summarize_prompt_difference(original_prompt: str, modified_prompt: str) -> s
         parts.append("The prompts differ mostly in phrasing rather than intent.")
 
     return " ".join(parts)
+
+
+def estimate_generation_scores(prompt: str, output: str, mode: str) -> tuple[float, float, float]:
+    """Estimate confidence-style scores for the UI from prompt/output heuristics."""
+    prompt_tokens = tokenize_text(prompt)
+    output_tokens = {token.lower() for token in tokenize_text(output)}
+    unique_prompt_tokens = {token.lower() for token in prompt_tokens}
+    overlap_ratio = (
+        len(unique_prompt_tokens & output_tokens) / len(unique_prompt_tokens)
+        if unique_prompt_tokens
+        else 0.0
+    )
+    prompt_length_bonus = min(len(prompt.strip()) / 180, 1.0)
+    richness_bonus = min(len(unique_prompt_tokens) / 22, 1.0)
+    output_length_bonus = min(len(output.strip()) / (220 if mode == "text" else 140), 1.0)
+
+    confidence = 58 + overlap_ratio * 22 + prompt_length_bonus * 12
+    clarity = 54 + richness_bonus * 26 + (0.12 if "," in prompt or "." in prompt else 0.0) * 100
+    quality = 60 + overlap_ratio * 16 + output_length_bonus * 18 + (4 if mode == "image" else 0)
+
+    return tuple(round(max(0.0, min(score, 99.0)), 2) for score in (confidence, clarity, quality))
+
+
+def quality_label_from_score(score: float) -> str:
+    """Convert a numeric quality score to a short label."""
+    if score >= 92:
+        return "Excellent"
+    if score >= 82:
+        return "Good"
+    if score >= 70:
+        return "Fair"
+    return "Needs Work"
+
+
+def build_pollinations_image_url(
+    *,
+    prompt: str,
+    base_url: str,
+    model: str,
+    width: int,
+    height: int,
+    nologo: bool,
+) -> str:
+    """Build a Pollinations image URL for the supplied prompt."""
+    query = urlencode(
+        {
+            "model": model,
+            "width": width,
+            "height": height,
+            "nologo": "true" if nologo else "false",
+        }
+    )
+    return f"{base_url.rstrip('/')}/{quote(prompt.strip())}?{query}"
+
+
+def relative_time_from_iso(value: str) -> str:
+    """Return a lightweight relative label from an ISO timestamp."""
+    created_at = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    now = datetime.now(timezone.utc)
+    seconds = max(0, int((now - created_at).total_seconds()))
+
+    if seconds < 60:
+        return "just now"
+    if seconds < 3600:
+        return f"{seconds // 60}m ago"
+    if seconds < 86400:
+        return f"{seconds // 3600}h ago"
+    return f"{seconds // 86400}d ago"
+
+
+def trim_text(text: str, limit: int = 140) -> str:
+    """Trim text without breaking the UI with very long strings."""
+    normalized = " ".join(text.split())
+    if len(normalized) <= limit:
+        return normalized
+    return normalized[: limit - 3].rstrip() + "..."
 
 
 def build_mock_text_output(prompt: str) -> str:

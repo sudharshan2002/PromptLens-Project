@@ -1,9 +1,21 @@
-import { useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { GrainLocal } from "../GrainOverlay";
+import { AppPageLinks } from "./AppPageLinks";
 import {
-  Send, Sparkles, Zap, Eye, RefreshCw, Copy, Bookmark, Clock, ArrowRight, Play
+  Send,
+  Sparkles,
+  Zap,
+  Eye,
+  RefreshCw,
+  Copy,
+  Clock,
+  Image as ImageIcon,
+  Type,
+  GitCompare,
 } from "lucide-react";
+import { api, formatRelativeTime, type GenerateResponse, type GenerationMode, type SessionRecord } from "../../lib/api";
 
 const mono: React.CSSProperties = {
   fontFamily: "'Roboto Mono', monospace",
@@ -12,153 +24,354 @@ const mono: React.CSSProperties = {
 };
 
 const ease = [0.16, 1, 0.3, 1] as const;
+const segmentColors = ["#D1FF00", "#7DFFAF", "#FF7D7D", "#7DB5FF", "#FFB87D"];
+const frigateText = "#050505";
+const frigateMuted = "#686868";
 
-const mockSegments = [
-  { text: "A cinematic", influence: 0.8, color: "#D1FF00" },
-  { text: "landscape photograph", influence: 0.95, color: "#7DFFAF" },
-  { text: "of a misty mountain", influence: 0.92, color: "#FF7D7D" },
-  { text: "at golden hour", influence: 0.75, color: "#7DB5FF" },
-  { text: "with dramatic lighting", influence: 0.88, color: "#FFB87D" },
-];
+const starterPrompts: Record<GenerationMode, string> = {
+  image: "Design a premium launch hero for Frigate, an explainable AI platform, with a glass cockpit visual metaphor, prompt-to-output mapping cues, and calm cinematic lighting",
+  text: "Write a polished launch announcement for Frigate that explains how prompt-to-output mapping, trust scoring, and what-if comparisons help AI teams ship safely.",
+};
 
-const mockExplanations = [
-  { segment: "cinematic", impact: "Applied wide aspect ratio, film grain, and depth of field" },
-  { segment: "landscape photograph", impact: "Set composition to wide-angle, horizon-dominant framing" },
-  { segment: "misty mountain", impact: "Generated volumetric fog, peak silhouettes, layered depth" },
-  { segment: "golden hour", impact: "Warm color temperature (3200K), low sun angle, long shadows" },
-  { segment: "dramatic lighting", impact: "Increased contrast, added rim lighting, enhanced specular highlights" },
-];
-
-const mockSuggestions = [
-  "Add 'volumetric rays' for depth",
-  "Try 'aerial perspective' for scale",
-  "Consider 'moody atmosphere'",
-];
-
-const mockHistory = [
-  { id: 1, prompt: "A minimalist logo for a tech startup", time: "2 min ago", confidence: 87 },
-  { id: 2, prompt: "A futuristic cityscape at night with neon", time: "8 min ago", confidence: 92 },
-  { id: 3, prompt: "Product photo of headphones on marble", time: "15 min ago", confidence: 78 },
-];
+const suggestionMap: Record<GenerationMode, string[]> = {
+  image: [
+    "Add live influence overlay",
+    "Try before/after diff ribbon",
+    "Consider multimodal control room",
+  ],
+  text: [
+    "Add a sharper CTA",
+    "Mention trusted deployment",
+    "Include a short product summary",
+  ],
+};
 
 function ConfidenceMeter({ value, label }: { value: number; label: string }) {
   return (
     <div>
-      <div className="flex justify-between mb-1.5">
-        <span style={{ ...mono, fontSize: 8, color: "#686868" }}>{label}</span>
-        <span style={{ ...mono, fontSize: 8, color: "#D1FF00" }}>{value}%</span>
+      <div className="mb-2 flex justify-between">
+        <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>{label}</span>
+        <span style={{ ...mono, fontSize: 10, color: "#1A3D1A" }}>{Math.round(value)}%</span>
       </div>
-      <div style={{ height: 2, backgroundColor: "#9C9C9C12", borderRadius: 1, overflow: "hidden" }}>
+      <div style={{ height: 4, backgroundColor: "#9C9C9C12", overflow: "hidden" }}>
         <motion.div
-          style={{ height: "100%", backgroundColor: "#D1FF00", borderRadius: 1 }}
+          style={{ height: "100%", backgroundColor: "#D1FF00" }}
           initial={{ width: 0 }}
-          animate={{ width: `${value}%` }}
-          transition={{ duration: 1, ease }}
+          animate={{ width: `${Math.max(4, value)}%` }}
+          transition={{ duration: 0.9, ease }}
         />
       </div>
     </div>
   );
 }
 
+function buildExplanationText(token: string, impact: number, mode: GenerationMode) {
+  if (impact >= 0.85) {
+    return `"${token}" is acting like a primary steering term and is strongly shaping the ${mode === "image" ? "composition" : "draft direction"}.`;
+  }
+  if (impact >= 0.65) {
+    return `"${token}" is reinforcing the tone and helping the system stay aligned with the prompt's main intent.`;
+  }
+  return `"${token}" is providing secondary context that supports the final ${mode === "image" ? "visual treatment" : "wording"}, but with lower leverage.`;
+}
+
 export function ComposerPage() {
-  const [prompt, setPrompt] = useState("A cinematic landscape photograph of a misty mountain at golden hour with dramatic lighting");
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<GenerationMode>("image");
+  const [prompt, setPrompt] = useState(starterPrompts.image);
+  const [result, setResult] = useState<GenerateResponse | null>(null);
+  const [history, setHistory] = useState<SessionRecord[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [hasOutput, setHasOutput] = useState(true);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [backendNotice, setBackendNotice] = useState<string | null>(null);
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
   const [activePanel, setActivePanel] = useState<"explain" | "insights" | "history">("explain");
 
-  const handleGenerate = () => {
+  async function loadHistory() {
+    setIsLoadingHistory(true);
+    try {
+      const response = await api.sessions(8);
+      setHistory(response.sessions);
+      setBackendNotice(response.isFallback ? response.fallbackMessage || "Showing example data while the backend reconnects." : null);
+      if (!result && response.sessions.length > 0) {
+        setPrompt(response.sessions[0].prompt);
+      }
+    } catch (historyError) {
+      setError(historyError instanceof Error ? historyError.message : "Unable to load session history.");
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadHistory();
+  }, []);
+
+  const segments = useMemo(() => {
+    return (result?.mapping || [])
+      .slice()
+      .sort((a, b) => b.impact - a.impact)
+      .slice(0, 5)
+      .map((item, index) => ({
+        text: item.token,
+        influence: item.impact,
+        color: segmentColors[index % segmentColors.length],
+      }));
+  }, [result]);
+
+  const guidedFeedback = useMemo(() => {
+    if (!result) return [];
+
+    const feedback = [];
+    const strongestToken = segments[0]?.text;
+
+    if (strongestToken) {
+      feedback.push(`"${strongestToken}" is currently the strongest lever in this run.`);
+    }
+    if (result.session.clarity_score < 84) {
+      feedback.push("Add one more concrete constraint to tighten output predictability.");
+    } else {
+      feedback.push("Prompt structure is clear enough to support stable refinement.");
+    }
+    feedback.push(
+      mode === "image"
+        ? "Add an explainability cue if you want a richer visual story in the dashboard."
+        : "A short CTA or closing outcome statement would make the text output feel more launch-ready.",
+    );
+
+    return feedback;
+  }, [mode, result, segments]);
+
+  async function handleGenerate() {
     if (!prompt.trim()) return;
+
     setIsGenerating(true);
-    setHasOutput(false);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const response = await api.generate({ prompt, mode, source: "composer" });
+      setResult(response);
+      const sessions = await api.sessions(8);
+      setHistory(sessions.sessions);
+      setBackendNotice(
+        response.isFallback
+          ? response.fallbackMessage || "Showing example data while the backend reconnects."
+          : sessions.isFallback
+            ? sessions.fallbackMessage || "Showing example data while the backend reconnects."
+            : null,
+      );
+      setActivePanel("explain");
+    } catch (generationError) {
+      setError(generationError instanceof Error ? generationError.message : "Generation failed.");
+    } finally {
       setIsGenerating(false);
-      setHasOutput(true);
-    }, 2000);
-  };
+    }
+  }
+
+  function handleSuggestionClick(suggestion: string) {
+    const normalized = suggestion
+      .replace(/^Add /, "")
+      .replace(/^Try /, "")
+      .replace(/^Consider /, "");
+    setPrompt((current) => `${current.trim().replace(/[.]?$/, "")}. ${normalized}`);
+  }
+
+  async function handleCopy() {
+    if (!result?.output) return;
+    await navigator.clipboard.writeText(result.output);
+  }
+
+  function switchMode(nextMode: GenerationMode) {
+    setMode(nextMode);
+    setPrompt(starterPrompts[nextMode]);
+    setResult(null);
+    setError(null);
+  }
+
+  function openInWhatIf(nextPrompt = prompt, nextMode = mode) {
+    if (!nextPrompt.trim()) return;
+
+    navigate("/what-if", {
+      state: {
+        prompt: nextPrompt.trim(),
+        mode: nextMode,
+        fromComposer: true,
+      },
+    });
+  }
 
   return (
     <div className="relative min-h-screen" style={{ backgroundColor: "#F5F4E7", paddingTop: 64 }}>
       <GrainLocal opacity={0.03} />
 
-      {/* Composer header */}
       <motion.div
-        className="relative z-10 flex items-center justify-between"
-        style={{ padding: "10px clamp(20px, 3vw, 40px)", borderBottom: "1px solid #00000010", backgroundColor: "#EBEAE0" }}
+        className="relative z-10 flex items-center justify-between gap-4"
+        style={{ padding: "14px clamp(20px, 3vw, 40px)", borderBottom: "1px solid #00000010", backgroundColor: "#EBEAE0" }}
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease, delay: 0.2 }}
       >
         <div className="flex items-center gap-4">
-          <span style={{ ...mono, fontSize: 9, color: "#1A3D1A" }}>Composer</span>
-          <div style={{ width: 1, height: 14, backgroundColor: "#9C9C9C18" }} />
-          <span style={{ ...mono, fontSize: 9, color: "#686868" }}>Session #847</span>
+          <span style={{ ...mono, fontSize: 11, color: "#1A3D1A" }}>Prompt Composer</span>
+          <div style={{ width: 1, height: 18, backgroundColor: "#9C9C9C18" }} />
+          <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>
+            {result ? `Session #${result.session.id}` : history[0] ? `Recent session #${history[0].id}` : "Live backend"}
+          </span>
         </div>
-        <div className="flex items-center gap-1">
-          {(["explain", "insights", "history"] as const).map((p) => (
+        <div className="flex items-center gap-2">
+          {(["explain", "insights", "history"] as const).map((panel) => (
             <button
-              key={p}
-              onClick={() => setActivePanel(p)}
+              key={panel}
+              onClick={() => setActivePanel(panel)}
               className="cursor-pointer border-none"
               style={{
-                ...mono, fontSize: 8,
-                color: activePanel === p ? "#1A3D1A" : "#686868",
-                backgroundColor: activePanel === p ? "#D1FF0030" : "transparent",
-                padding: "5px 10px", borderRadius: 3,
-                transition: "all 0.2s ease-out",
+                ...mono,
+                fontSize: 10,
+                color: activePanel === panel ? "#1A3D1A" : frigateMuted,
+                backgroundColor: activePanel === panel ? "#D1FF0030" : "#F5F4E7",
+                padding: "8px 12px",
+                border: `1px solid ${activePanel === panel ? "#D1FF00" : "#00000012"}`,
               }}
-              onMouseEnter={(e) => { if (activePanel !== p) e.currentTarget.style.color = "#050505"; }}
-              onMouseLeave={(e) => { if (activePanel !== p) e.currentTarget.style.color = "#686868"; }}
             >
-              {p}
+              {panel === "explain" ? "mapping" : panel === "insights" ? "insights" : "sessions"}
             </button>
           ))}
         </div>
       </motion.div>
 
-      {/* Main workspace */}
-      <div className="relative z-10 flex flex-col lg:flex-row" style={{ minHeight: "calc(100vh - 108px)" }}>
-        {/* Left: prompt + output */}
-        <div className="flex-1 flex flex-col" style={{ borderRight: "1px solid #00000008" }}>
-          {/* Prompt area */}
+      <div className="relative z-10 mx-auto grid gap-6" style={{ maxWidth: 1580, padding: "24px clamp(20px, 3vw, 40px) 32px" }}>
+        <AppPageLinks currentPage="composer" />
+
+        {backendNotice && (
+          <div className="p-4" style={{ border: "1px solid #D1FF00", backgroundColor: "#D1FF0010" }}>
+            <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 8 }}>Offline Example Mode</div>
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, margin: 0 }}>{backendNotice}</p>
+          </div>
+        )}
+
+      <div className="flex min-h-[calc(100vh-118px)] flex-col lg:flex-row" style={{ border: "1px solid #00000012" }}>
+        <div className="flex flex-1 flex-col" style={{ borderRight: "1px solid #00000008" }}>
           <motion.div
-            style={{ padding: "20px clamp(20px, 3vw, 32px)", borderBottom: "1px solid #00000008" }}
+            style={{ padding: "28px clamp(20px, 3vw, 34px)", borderBottom: "1px solid #00000008" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles size={11} style={{ color: "#1A3D1A" }} />
-              <span style={{ ...mono, fontSize: 8, color: "#686868" }}>Prompt Input</span>
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+              <div style={{ maxWidth: 720 }}>
+                <div className="mb-3 flex items-center gap-2">
+                  <Sparkles size={13} style={{ color: "#1A3D1A" }} />
+                  <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>Prompt Composer</span>
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'TASA Orbiter', Inter, sans-serif",
+                    fontWeight: 900,
+                    fontSize: "clamp(1.55rem, 2.3vw, 2.35rem)",
+                    lineHeight: 1,
+                    letterSpacing: "-0.045em",
+                    color: frigateText,
+                    marginBottom: 10,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  The editor should feel like the same Frigate product.
+                </div>
+                <p
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 15,
+                    lineHeight: "170%",
+                    color: frigateMuted,
+                    margin: 0,
+                    maxWidth: 640,
+                  }}
+                >
+                  Compose the request, choose the output type, and inspect the influence map inside a calmer, more editorial workspace that matches the rest of the app.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {([
+                  { id: "image", label: "Image", icon: <ImageIcon size={11} /> },
+                  { id: "text", label: "Text", icon: <Type size={11} /> },
+                ] as const).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => switchMode(item.id)}
+                    className="cursor-pointer border-none flex items-center gap-2"
+                    style={{
+                      ...mono,
+                      fontSize: 10,
+                      color: mode === item.id ? "#1A3D1A" : frigateMuted,
+                      backgroundColor: mode === item.id ? "#D1FF0026" : "#F2F1E8",
+                      padding: "10px 14px",
+                      border: `1px solid ${mode === item.id ? "#D1FF00" : "#00000010"}`,
+                    }}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3" style={{ border: "1px solid #00000010", backgroundColor: "#F2F1E8", padding: 14 }}>
+                <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>Current Prompt</span>
+                <button
+                  type="button"
+                  onClick={() => openInWhatIf()}
+                  disabled={!prompt.trim()}
+                  className="cursor-pointer border-none flex items-center gap-2"
+                  style={{
+                    ...mono,
+                    fontSize: 10,
+                    color: frigateText,
+                    backgroundColor: "#D1FF00",
+                    padding: "9px 12px",
+                    opacity: prompt.trim() ? 1 : 0.45,
+                  }}
+                >
+                  <GitCompare size={12} />
+                  Send To What If
+                </button>
+              </div>
+
             <textarea
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-              className="w-full outline-none resize-none"
-              placeholder="Describe what you want to generate..."
+              onChange={(event) => setPrompt(event.target.value)}
+              rows={5}
+              className="w-full resize-none outline-none"
+              placeholder={`Describe the ${mode} result you want to generate...`}
               style={{
-                fontFamily: "Inter, sans-serif", fontSize: 15,
-                color: "#050505", backgroundColor: "transparent", border: "none", lineHeight: "170%",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 17,
+                color: frigateText,
+                backgroundColor: "#F9F8EF",
+                border: "1px solid #00000010",
+                lineHeight: "175%",
+                padding: 20,
               }}
             />
-            <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-2">
-                {mockSuggestions.map((s, i) => (
+                {suggestionMap[mode].map((suggestion) => (
                   <button
-                    key={i}
-                    onClick={() => setPrompt(prompt + ". " + s.replace(/^(Add|Try|Consider) '/, "").replace("'.*", ""))}
+                    key={suggestion}
+                    onClick={() => handleSuggestionClick(suggestion)}
                     className="cursor-pointer border-none"
                     style={{
-                      ...mono, fontSize: 7, color: "#686868",
-                      backgroundColor: "#9C9C9C0A", padding: "4px 10px", borderRadius: 3,
+                      ...mono,
+                      fontSize: 10,
+                      color: frigateMuted,
+                      backgroundColor: "#9C9C9C0A",
+                      padding: "8px 12px",
                       border: "1px solid #9C9C9C10",
-                      transition: "color 0.2s, border-color 0.2s",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = "#D1FF00"; e.currentTarget.style.borderColor = "#D1FF0030"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = "#686868"; e.currentTarget.style.borderColor = "#9C9C9C10"; }}
                   >
-                    + {s}
+                    + {suggestion}
                   </button>
                 ))}
               </div>
@@ -167,189 +380,269 @@ export function ComposerPage() {
                 disabled={isGenerating}
                 className="cursor-pointer border-none flex items-center gap-2"
                 style={{
-                  ...mono, fontSize: 9, fontWeight: 600,
-                  color: "#050505", backgroundColor: "#D1FF00",
-                  padding: "10px 20px", borderRadius: 4,
+                  ...mono,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: frigateText,
+                  backgroundColor: "#D1FF00",
+                  padding: "13px 20px",
                   opacity: isGenerating ? 0.6 : 1,
-                  transition: "transform 0.2s, opacity 0.2s",
                 }}
-                onMouseEnter={(e) => !isGenerating && (e.currentTarget.style.transform = "translateY(-1px)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
               >
-                {isGenerating ? <RefreshCw size={11} className="animate-spin" /> : <Send size={11} />}
-                {isGenerating ? "Generating..." : "Generate"}
+                {isGenerating ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
+                {isGenerating ? "Generating..." : `Run ${mode === "image" ? "Image" : "Text"} Generation`}
               </button>
             </div>
           </motion.div>
 
-          {/* Segments */}
           <motion.div
-            style={{ padding: "14px clamp(20px, 3vw, 32px)", borderBottom: "1px solid #00000008" }}
+            style={{ padding: "18px clamp(20px, 3vw, 34px)", borderBottom: "1px solid #00000008" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <Eye size={11} style={{ color: "#686868" }} />
-              <span style={{ ...mono, fontSize: 8, color: "#686868" }}>Segment Analysis</span>
+            <div className="mb-4 flex items-center gap-2">
+              <Eye size={13} style={{ color: frigateMuted }} />
+              <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>Prompt-to-Output Map</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {mockSegments.map((seg, i) => (
-                <motion.button
-                  key={i}
-                  className="cursor-pointer border-none"
-                  style={{
-                    fontFamily: "Inter, sans-serif", fontSize: 13,
-                    color: activeSegment === i ? "#050505" : "#050505",
-                    backgroundColor: activeSegment === i ? seg.color : "transparent",
-                    border: `1px solid ${activeSegment === i ? seg.color : "#9C9C9C20"}`,
-                    padding: "5px 12px", borderRadius: 3,
-                    transition: "all 0.2s ease-out",
-                  }}
-                  onMouseEnter={() => setActiveSegment(i)}
-                  onMouseLeave={() => setActiveSegment(null)}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease, delay: 0.5 + i * 0.05 }}
-                >
-                  {seg.text}
-                  <span style={{ ...mono, fontSize: 7, marginLeft: 6, opacity: 0.5 }}>{Math.round(seg.influence * 100)}%</span>
-                </motion.button>
-              ))}
+            <div className="flex flex-wrap gap-3">
+              {segments.length > 0 ? (
+                segments.map((segment, index) => (
+                  <motion.button
+                    key={`${segment.text}-${index}`}
+                    className="cursor-pointer border-none"
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: frigateText,
+                      backgroundColor: activeSegment === index ? segment.color : "#F9F8EF",
+                      border: `1px solid ${activeSegment === index ? segment.color : "#9C9C9C20"}`,
+                      padding: "8px 14px",
+                    }}
+                    onMouseEnter={() => setActiveSegment(index)}
+                    onMouseLeave={() => setActiveSegment(null)}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease, delay: 0.1 + index * 0.05 }}
+                  >
+                    {segment.text}
+                    <span style={{ ...mono, fontSize: 9, marginLeft: 8, opacity: 0.6 }}>{Math.round(segment.influence * 100)}%</span>
+                  </motion.button>
+                ))
+              ) : (
+                <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>Generate once to see mapped prompt influence.</span>
+              )}
             </div>
           </motion.div>
 
-          {/* Output */}
-          <div className="flex-1" style={{ padding: "20px clamp(20px, 3vw, 32px)" }}>
-            <div className="flex items-center justify-between mb-4">
-              <span style={{ ...mono, fontSize: 8, color: "#686868" }}>Output</span>
-              {hasOutput && (
+          <div className="flex-1" style={{ padding: "24px clamp(20px, 3vw, 34px)" }}>
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 6 }}>Generated Result</div>
+                <div style={{ fontFamily: "Inter, sans-serif", fontSize: 17, fontWeight: 700, color: frigateText }}>
+                  {mode === "image" ? "Visual output preview" : "Written output preview"}
+                </div>
+              </div>
+              {result && (
                 <div className="flex items-center gap-2">
-                  {[Copy, Bookmark].map((Icon, idx) => (
-                    <button key={idx} className="cursor-pointer border-none bg-transparent p-1" style={{ color: "#686868", transition: "color 0.2s" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "#050505")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "#686868")}
-                    ><Icon size={13} /></button>
-                  ))}
+                  <button
+                    type="button"
+                    className="cursor-pointer border-none flex items-center gap-2"
+                    style={{ ...mono, fontSize: 10, color: frigateMuted, backgroundColor: "#F2F1E8", padding: "8px 10px" }}
+                    onClick={() => void handleCopy()}
+                  >
+                    <Copy size={12} />
+                    Copy
+                  </button>
+                  <button
+                    type="button"
+                    className="cursor-pointer border-none flex items-center gap-2"
+                    style={{ ...mono, fontSize: 10, color: frigateText, backgroundColor: "#D1FF00", padding: "8px 10px" }}
+                    onClick={() => openInWhatIf(result.session.prompt, result.session.mode)}
+                  >
+                    <GitCompare size={12} />
+                    Compare In What If
+                  </button>
                 </div>
               )}
             </div>
 
             <AnimatePresence mode="wait">
               {isGenerating ? (
-                <motion.div key="loading" className="flex flex-col items-center justify-center" style={{ minHeight: 280 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <motion.div style={{ width: 40, height: 2, backgroundColor: "#D1FF00", borderRadius: 1 }} animate={{ scaleX: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} />
-                  <span style={{ ...mono, fontSize: 8, color: "#686868", marginTop: 14 }}>Generating with explanation layer...</span>
+                <motion.div
+                  key="loading"
+                  className="flex min-h-[280px] flex-col items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <motion.div
+                    style={{ width: 48, height: 4, backgroundColor: "#D1FF00" }}
+                    animate={{ scaleX: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <span style={{ ...mono, fontSize: 10, color: frigateMuted, marginTop: 16 }}>
+                    Generating with {mode === "image" ? "Pollinations" : "Replicate"}...
+                  </span>
                 </motion.div>
-              ) : hasOutput ? (
+              ) : error ? (
+                <motion.div
+                  key="error"
+                  className="p-5"
+                  style={{ minHeight: 220, border: "1px solid #FF7D7D20", backgroundColor: "#FF7D7D08" }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <div style={{ ...mono, fontSize: 10, color: "#FF7D7D", marginBottom: 10 }}>Request Error</div>
+                  <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "170%", color: frigateMuted }}>{error}</p>
+                </motion.div>
+              ) : result ? (
                 <motion.div key="output" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease }}>
-                  <div className="relative w-full rounded overflow-hidden mb-5" style={{ backgroundColor: "#1C1E19", aspectRatio: "16/10", border: "1px solid #9C9C9C10" }}>
-                    <GrainLocal opacity={0.08} />
-                    <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #1a2a15 0%, #2d1a0a 25%, #1a1a2d 50%, #2d2a1a 75%, #1a2d2a 100%)" }} />
-                    <AnimatePresence>
-                      {activeSegment !== null && (
-                        <motion.div className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-                          style={{ background: `radial-gradient(ellipse at ${20 + activeSegment * 15}% ${30 + activeSegment * 10}%, ${mockSegments[activeSegment].color}50 0%, transparent 55%)` }}
-                        />
-                      )}
-                    </AnimatePresence>
-                    <div className="absolute bottom-3 left-3"><span style={{ ...mono, fontSize: 7, color: "#FFFFED", backgroundColor: "#050505cc", padding: "3px 7px", borderRadius: 2 }}>Generated · 1024×640</span></div>
-                    <div className="absolute top-3 right-3"><span style={{ ...mono, fontSize: 7, color: "#1A3D1A", backgroundColor: "#05050522", padding: "3px 7px", borderRadius: 2 }}>Mapping Active</span></div>
-                  </div>
+                  {mode === "image" ? (
+                    <div className="relative mb-5 w-full overflow-hidden" style={{ backgroundColor: "#1C1E19", aspectRatio: "16/10", border: "1px solid #9C9C9C10" }}>
+                      <img src={result.output} alt={prompt} className="absolute inset-0 h-full w-full object-cover" />
+                      <AnimatePresence>
+                        {activeSegment !== null && segments[activeSegment] && (
+                          <motion.div
+                            className="absolute inset-0"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.45 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            style={{
+                              background: `radial-gradient(ellipse at ${20 + activeSegment * 15}% ${30 + activeSegment * 10}%, ${segments[activeSegment].color}50 0%, transparent 55%)`,
+                            }}
+                          />
+                        )}
+                      </AnimatePresence>
+                      <div className="absolute bottom-4 left-4">
+                        <span style={{ ...mono, fontSize: 10, color: "#FFFFED", backgroundColor: "#050505cc", padding: "5px 10px" }}>
+                          {result.provider} | live image
+                        </span>
+                      </div>
+                      <div className="absolute top-4 right-4">
+                        <span style={{ ...mono, fontSize: 10, color: "#1A3D1A", backgroundColor: "#D1FF00", padding: "5px 10px" }}>
+                          Overlay Live
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-5" style={{ border: "1px solid #9C9C9C10", backgroundColor: "#EBEAE0", padding: 24 }}>
+                      <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 12 }}>{result.provider} | generated text</div>
+                      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 16, lineHeight: "185%", color: frigateText, whiteSpace: "pre-wrap" }}>{result.output}</p>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-3 gap-4">
-                    <ConfidenceMeter value={92} label="Confidence" />
-                    <ConfidenceMeter value={87} label="Clarity" />
-                    <ConfidenceMeter value={94} label="Quality" />
+                    <ConfidenceMeter value={result.session.trust_score} label="Confidence" />
+                    <ConfidenceMeter value={result.session.clarity_score} label="Clarity" />
+                    <ConfidenceMeter value={result.session.quality_score} label="Quality" />
                   </div>
                 </motion.div>
               ) : (
-                <motion.div key="empty" className="flex flex-col items-center justify-center text-center" style={{ minHeight: 280 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <Sparkles size={20} style={{ color: "#686868", marginBottom: 10, opacity: 0.25 }} />
-                  <p style={{ ...mono, fontSize: 9, color: "#686868" }}>Write a prompt and generate</p>
+                <motion.div
+                  key="empty"
+                  className="flex min-h-[280px] flex-col items-center justify-center text-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <Sparkles size={20} style={{ color: frigateMuted, marginBottom: 10, opacity: 0.25 }} />
+                  <p style={{ ...mono, fontSize: 10, color: frigateMuted }}>Add a prompt to start the explainable generation loop</p>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
 
-        {/* Right panel */}
         <motion.div
           className="flex flex-col"
-          style={{ width: "100%", maxWidth: 360, backgroundColor: "#EBEAE0" }}
+          style={{ width: "100%", maxWidth: 390, backgroundColor: "#EBEAE0" }}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease, delay: 0.4 }}
         >
-          <div style={{ padding: "14px 18px", borderBottom: "1px solid #00000010" }}>
-            <span style={{ ...mono, fontSize: 8, color: "#1A3D1A" }}>
-              {activePanel === "explain" ? "Explanation Layer" : activePanel === "insights" ? "Insights" : "Session History"}
+          <div style={{ padding: "18px 20px", borderBottom: "1px solid #00000010" }}>
+            <span style={{ ...mono, fontSize: 10, color: "#1A3D1A" }}>
+              {activePanel === "explain" ? "Explanation Layer" : activePanel === "insights" ? "Trust Signals" : "Session History"}
             </span>
           </div>
 
-          <div className="flex-1 overflow-y-auto" style={{ padding: "14px 18px" }}>
+          <div className="flex-1 overflow-y-auto" style={{ padding: "18px 20px" }}>
             {activePanel === "explain" && (
-              <div className="flex flex-col gap-3">
-                {mockExplanations.map((exp, i) => (
-                  <motion.div
-                    key={i}
-                    className="p-3.5 rounded"
-                    style={{
-                      backgroundColor: activeSegment === i ? "#D1FF0008" : "#9C9C9C06",
-                      border: `1px solid ${activeSegment === i ? "#D1FF0025" : "#9C9C9C10"}`,
-                      transition: "all 0.2s ease-out", cursor: "default",
-                    }}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease, delay: 0.5 + i * 0.05 }}
-                    onMouseEnter={() => setActiveSegment(i)}
-                    onMouseLeave={() => setActiveSegment(null)}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: mockSegments[i]?.color || "#686868" }} />
-                      <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, color: "#050505" }}>"{exp.segment}"</span>
-                    </div>
-                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, lineHeight: "160%", color: "#686868" }}>{exp.impact}</p>
-                    <div className="mt-1.5"><span style={{ ...mono, fontSize: 7, color: "#686868" }}>Influence: {Math.round((mockSegments[i]?.influence || 0.5) * 100)}%</span></div>
-                  </motion.div>
-                ))}
-                <div className="mt-3 p-3.5 rounded" style={{ border: "1px solid #00000010" }}>
-                  <div style={{ ...mono, fontSize: 8, color: "#D1FF00", marginBottom: 8 }}>Guided Feedback</div>
-                  {[
-                    '"dramatic lighting" caused 23% contrast increase. Consider softening.',
-                    'Adding "soft focus foreground" could improve depth by ~15%.',
-                  ].map((fb, i) => (
-                    <div key={i} className="flex items-start gap-2 mb-2">
-                      <Zap size={9} style={{ color: "#D1FF00", flexShrink: 0, marginTop: 3 }} />
-                      <span style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "#686868", lineHeight: "155%" }}>{fb}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-col gap-4">
+                {segments.length > 0 ? (
+                  segments.map((segment, index) => (
+                    <motion.div
+                      key={`${segment.text}-${index}`}
+                      className="p-4"
+                      style={{
+                        backgroundColor: activeSegment === index ? "#D1FF0008" : "#9C9C9C06",
+                        border: `1px solid ${activeSegment === index ? "#D1FF0025" : "#9C9C9C10"}`,
+                        cursor: "default",
+                      }}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, ease, delay: index * 0.05 }}
+                      onMouseEnter={() => setActiveSegment(index)}
+                      onMouseLeave={() => setActiveSegment(null)}
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <div style={{ width: 8, height: 8, backgroundColor: segment.color }} />
+                        <span style={{ fontFamily: "Inter, sans-serif", fontSize: 15, fontWeight: 700, color: frigateText }}>"{segment.text}"</span>
+                      </div>
+                      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "168%", color: frigateMuted }}>
+                        {buildExplanationText(segment.text, segment.influence, mode)}
+                      </p>
+                      <div className="mt-2">
+                        <span style={{ ...mono, fontSize: 9, color: frigateMuted }}>Influence: {Math.round(segment.influence * 100)}%</span>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="p-4" style={{ border: "1px solid #00000010" }}>
+                    <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>No mapping yet.</span>
+                  </div>
+                )}
+
+                {guidedFeedback.length > 0 && (
+                  <div className="p-4" style={{ border: "1px solid #00000010" }}>
+                    <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 10 }}>Guided Feedback</div>
+                    {guidedFeedback.map((feedback) => (
+                      <div key={feedback} className="mb-3 flex items-start gap-2 last:mb-0">
+                        <Zap size={12} style={{ color: "#1A3D1A", flexShrink: 0, marginTop: 4 }} />
+                        <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: frigateMuted, lineHeight: "160%" }}>{feedback}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
             {activePanel === "insights" && (
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-6">
                 <div>
-                  <div style={{ ...mono, fontSize: 8, color: "#686868", marginBottom: 10 }}>Metrics</div>
-                  <div className="flex flex-col gap-3">
-                    <ConfidenceMeter value={92} label="Overall Confidence" />
-                    <ConfidenceMeter value={87} label="Prompt Clarity" />
-                    <ConfidenceMeter value={94} label="Output Quality" />
-                    <ConfidenceMeter value={78} label="Prompt Efficiency" />
+                  <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 12 }}>Metrics</div>
+                  <div className="flex flex-col gap-4">
+                    <ConfidenceMeter value={result?.session.trust_score || 0} label="Overall Confidence" />
+                    <ConfidenceMeter value={result?.session.clarity_score || 0} label="Prompt Clarity" />
+                    <ConfidenceMeter value={result?.session.quality_score || 0} label="Output Quality" />
+                    <ConfidenceMeter value={Math.min(98, (result?.mapping.length || 0) * 16)} label="Edit Efficiency" />
                   </div>
                 </div>
+
                 <div>
-                  <div style={{ ...mono, fontSize: 8, color: "#686868", marginBottom: 10 }}>Token Analysis</div>
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 12 }}>Mapping Analysis</div>
+                  <div className="grid grid-cols-2 gap-3">
                     {[
-                      { label: "Tokens Used", value: "47" },
-                      { label: "Unique Segments", value: "5" },
-                      { label: "Avg Influence", value: "86%" },
-                      { label: "Redundancy", value: "Low" },
-                    ].map((t, i) => (
-                      <div key={i} className="p-3 rounded" style={{ backgroundColor: "#9C9C9C06", border: "1px solid #9C9C9C10" }}>
-                        <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 15, color: "#050505" }}>{t.value}</div>
-                        <div style={{ ...mono, fontSize: 7, color: "#686868", marginTop: 2 }}>{t.label}</div>
+                      { label: "Tokens Used", value: `${result?.tokens.length || 0}` },
+                      { label: "Tracked Segments", value: `${segments.length}` },
+                      { label: "Provider", value: result?.provider || "idle" },
+                      { label: "Latency", value: result ? `${Math.round(result.session.response_time_ms)}ms` : "0ms" },
+                    ].map((tile) => (
+                      <div key={tile.label} className="p-4" style={{ backgroundColor: "#9C9C9C06", border: "1px solid #9C9C9C10" }}>
+                        <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 18, color: frigateText }}>{tile.value}</div>
+                        <div style={{ ...mono, fontSize: 9, color: frigateMuted, marginTop: 4 }}>{tile.label}</div>
                       </div>
                     ))}
                   </div>
@@ -358,30 +651,43 @@ export function ComposerPage() {
             )}
 
             {activePanel === "history" && (
-              <div className="flex flex-col gap-2.5">
-                <div style={{ ...mono, fontSize: 8, color: "#686868", marginBottom: 4 }}>Recent Sessions</div>
-                {mockHistory.map((h, i) => (
-                  <motion.div
-                    key={h.id}
-                    className="p-3.5 rounded cursor-pointer"
-                    style={{ border: "1px solid #9C9C9C10", transition: "border-color 0.2s" }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "#D1FF0030")}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "#9C9C9C10")}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease, delay: i * 0.05 }}
-                  >
-                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "#050505", marginBottom: 5, lineHeight: "150%" }}>{h.prompt}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1"><Clock size={9} style={{ color: "#686868" }} /><span style={{ ...mono, fontSize: 7, color: "#686868" }}>{h.time}</span></div>
-                      <span style={{ ...mono, fontSize: 7, color: "#D1FF00" }}>{h.confidence}% conf</span>
-                    </div>
-                  </motion.div>
-                ))}
+              <div className="flex flex-col gap-3">
+                <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 4 }}>Recent Sessions</div>
+                {isLoadingHistory ? (
+                  <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>Loading history...</span>
+                ) : history.length > 0 ? (
+                  history.map((session) => (
+                    <motion.button
+                      key={session.id}
+                      className="border-none p-4 text-left cursor-pointer"
+                      style={{ border: "1px solid #9C9C9C10", backgroundColor: "transparent" }}
+                      onClick={() => {
+                        setPrompt(session.prompt);
+                        setMode(session.mode);
+                        setActivePanel("insights");
+                      }}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, ease }}
+                    >
+                      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, color: frigateText, marginBottom: 8, lineHeight: "160%" }}>{session.prompt}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock size={11} style={{ color: frigateMuted }} />
+                          <span style={{ ...mono, fontSize: 9, color: frigateMuted }}>{formatRelativeTime(session.created_at)}</span>
+                        </div>
+                        <span style={{ ...mono, fontSize: 9, color: "#1A3D1A" }}>{Math.round(session.trust_score)}% conf</span>
+                      </div>
+                    </motion.button>
+                  ))
+                ) : (
+                  <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>No sessions stored yet.</span>
+                )}
               </div>
             )}
           </div>
         </motion.div>
+      </div>
       </div>
     </div>
   );

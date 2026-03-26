@@ -13,20 +13,7 @@ class GenerateRequest(BaseModel):
 
     prompt: str = Field(..., min_length=1, description="User prompt text")
     mode: Literal["text", "image"] = Field(default="text")
-
-
-class GenerateResponse(BaseModel):
-    """Output payload for generated content."""
-
-    output: str
-    tokens: list[str]
-
-
-class ExplainRequest(BaseModel):
-    """Input payload for prompt explainability."""
-
-    prompt: str = Field(..., min_length=1)
-    output: str = Field(..., min_length=1)
+    source: Literal["composer", "what-if", "api"] = Field(default="composer")
 
 
 class TokenImpact(BaseModel):
@@ -36,10 +23,70 @@ class TokenImpact(BaseModel):
     impact: float = Field(..., ge=0.0, le=1.0)
 
 
+class ExplainRequest(BaseModel):
+    """Input payload for prompt explainability."""
+
+    prompt: str = Field(..., min_length=1)
+    output: str = Field(..., min_length=1)
+
+
 class ExplainResponse(BaseModel):
     """Explainability response payload."""
 
     mapping: list[TokenImpact]
+
+
+class SessionCreate(BaseModel):
+    """Input payload for creating a stored generation session."""
+
+    prompt: str = Field(..., min_length=1)
+    output: str = Field(..., min_length=1)
+    mode: Literal["text", "image"]
+    source: Literal["composer", "what-if", "api"]
+    provider: str = Field(..., min_length=1, max_length=64)
+    response_time_ms: float = Field(..., ge=0)
+    token_count: int = Field(..., ge=0)
+    trust_score: float = Field(..., ge=0, le=100)
+    clarity_score: float = Field(..., ge=0, le=100)
+    quality_score: float = Field(..., ge=0, le=100)
+    quality_label: str = Field(..., min_length=1, max_length=24)
+    difference_summary: str | None = Field(default=None, max_length=1000)
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    @field_validator("created_at")
+    @classmethod
+    def validate_session_created_at(cls, value: str) -> str:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return value
+
+
+class SessionRecord(BaseModel):
+    """Stored generation session payload."""
+
+    id: int
+    prompt: str
+    output: str
+    mode: Literal["text", "image"]
+    source: Literal["composer", "what-if", "api"]
+    provider: str
+    response_time_ms: float
+    token_count: int
+    trust_score: float
+    clarity_score: float
+    quality_score: float
+    quality_label: str
+    difference_summary: str | None = None
+    created_at: str
+
+
+class GenerateResponse(BaseModel):
+    """Output payload for generated content."""
+
+    output: str
+    provider: str
+    tokens: list[str]
+    mapping: list[TokenImpact]
+    session: SessionRecord
 
 
 class WhatIfRequest(BaseModel):
@@ -47,13 +94,24 @@ class WhatIfRequest(BaseModel):
 
     original_prompt: str = Field(..., min_length=1)
     modified_prompt: str = Field(..., min_length=1)
+    mode: Literal["text", "image"] = Field(default="image")
+
+
+class ComparisonDelta(BaseModel):
+    """Metric deltas between original and modified variants."""
+
+    confidence: float
+    clarity: float
+    quality: float
 
 
 class WhatIfResponse(BaseModel):
     """Output payload for prompt delta analysis."""
 
     difference: str
-    new_output: str
+    original_session: SessionRecord
+    modified_session: SessionRecord
+    delta: ComparisonDelta
 
 
 class MetricCreateRequest(BaseModel):
@@ -91,3 +149,64 @@ class MetricSummaryResponse(BaseModel):
     avg_response_time: float
     avg_rating: float | None
     total_requests: int
+
+
+class RecentRun(BaseModel):
+    """Recent session item for dashboard views."""
+
+    id: int
+    prompt: str
+    mode: Literal["text", "image"]
+    provider: str
+    confidence: float
+    clarity: float
+    quality: float
+    quality_label: str
+    created_at: str
+
+
+class TrendPoint(BaseModel):
+    """Daily trend entry for confidence, clarity, and quality."""
+
+    day: str
+    confidence: float
+    clarity: float
+    quality: float
+
+
+class UsagePoint(BaseModel):
+    """Run counts bucketed by hour."""
+
+    hour: str
+    runs: int
+
+
+class SystemStatusItem(BaseModel):
+    """System status card payload."""
+
+    label: str
+    value: str
+    status: str
+
+
+class DashboardMetricsResponse(BaseModel):
+    """Dashboard summary payload."""
+
+    avg_confidence: float
+    avg_clarity: float
+    avg_quality: float
+    avg_response_time: float
+    total_runs: int
+    trend: list[TrendPoint]
+    usage_today: list[UsagePoint]
+    recent_runs: list[RecentRun]
+    system_status: list[SystemStatusItem]
+    storage_bytes: int
+
+
+class SessionListResponse(BaseModel):
+    """List of recent sessions."""
+
+    sessions: list[SessionRecord]
+    total_runs: int
+    storage_bytes: int

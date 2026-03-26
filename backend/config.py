@@ -29,8 +29,14 @@ class Settings:
     port: int
     reload: bool
     cors_origins: list[str]
-    openai_api_key: str | None
-    openai_text_model: str
+    replicate_api_token: str | None
+    replicate_model: str
+    replicate_wait_seconds: int
+    pollinations_base_url: str
+    pollinations_model: str
+    pollinations_width: int
+    pollinations_height: int
+    pollinations_nologo: bool
     sqlite_db_path: Path
 
 
@@ -47,7 +53,13 @@ def get_settings() -> Settings:
         port=int(os.getenv("PORT", "8000")),
         reload=_parse_bool(os.getenv("RELOAD"), default=False),
         cors_origins=[origin.strip() for origin in cors_origins.split(",") if origin.strip()] or ["*"],
-        openai_api_key=os.getenv("OPENAI_API_KEY"),
-        openai_text_model=os.getenv("OPENAI_TEXT_MODEL", "gpt-4.1-mini"),
+        replicate_api_token=os.getenv("REPLICATE_API_TOKEN"),
+        replicate_model=os.getenv("REPLICATE_TEXT_MODEL", "meta/meta-llama-3-70b-instruct"),
+        replicate_wait_seconds=int(os.getenv("REPLICATE_WAIT_SECONDS", "60")),
+        pollinations_base_url=os.getenv("POLLINATIONS_BASE_URL", "https://image.pollinations.ai/prompt"),
+        pollinations_model=os.getenv("POLLINATIONS_MODEL", "flux"),
+        pollinations_width=int(os.getenv("POLLINATIONS_WIDTH", "1280")),
+        pollinations_height=int(os.getenv("POLLINATIONS_HEIGHT", "768")),
+        pollinations_nologo=_parse_bool(os.getenv("POLLINATIONS_NOLOGO"), default=True),
         sqlite_db_path=Path(db_path),
     )

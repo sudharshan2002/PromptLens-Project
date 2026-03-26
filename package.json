@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "backend": "powershell -ExecutionPolicy Bypass -File backend/start.ps1",
     "build": "vite build",
     "dev": "vite"
   },

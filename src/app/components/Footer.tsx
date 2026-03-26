@@ -37,21 +37,21 @@ const HoverNavLink = ({ label, path }: { label: string; path: string }) => {
   );
 };
 
-const HoverSmallLink = ({ num, label, href }: { num: string; label: string; href: string }) => {
-  return (
-    <a
-      href={href}
-      className="group relative flex items-center gap-5 no-underline overflow-hidden -mx-2 px-2 py-1.5"
-      style={{
-        fontFamily: "'Roboto Mono', monospace",
-        textTransform: "uppercase",
-        letterSpacing: "0.05em",
-        fontSize: 10,
-        fontWeight: 600,
-        textDecoration: "none",
-        color: "rgba(5,5,5,0.6)",
-      }}
-    >
+const HoverSmallLink = ({
+  num,
+  label,
+  href,
+  path,
+}: {
+  num: string;
+  label: string;
+  href?: string;
+  path?: string;
+}) => {
+  const navigate = useNavigate();
+
+  const content = (
+    <>
       <div
          className="absolute inset-0 bg-[#D1FF00] origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100 will-change-transform"
          style={{ zIndex: 0 }}
@@ -60,6 +60,33 @@ const HoverSmallLink = ({ num, label, href }: { num: string; label: string; href
         <span className="opacity-40 transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:opacity-100" style={{ minWidth: 28 }}>{num}</span>
         <span className="transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1.5 will-change-transform">{label}</span>
       </div>
+    </>
+  );
+
+  const sharedProps = {
+    className: "group relative flex items-center gap-5 no-underline overflow-hidden -mx-2 px-2 py-1.5 w-full bg-transparent border-none text-left cursor-pointer",
+    style: {
+      fontFamily: "'Roboto Mono', monospace",
+      textTransform: "uppercase" as const,
+      letterSpacing: "0.05em",
+      fontSize: 10,
+      fontWeight: 600,
+      textDecoration: "none",
+      color: "rgba(5,5,5,0.6)",
+    },
+  };
+
+  if (path) {
+    return (
+      <button type="button" onClick={() => navigate(path)} {...sharedProps}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <a href={href ?? "#"} {...sharedProps}>
+      {content}
     </a>
   );
 };
@@ -67,9 +94,9 @@ const HoverSmallLink = ({ num, label, href }: { num: string; label: string; href
 const navLinks = [
   { label: "HOME", path: "/" },
   { label: "COMPOSER", path: "/composer" },
-  { label: "WHAT-IF", path: "/what-if" },
-  { label: "INSIGHTS", path: "/dashboard" },
-  { label: "CONTACT", path: "/#contact" },
+  { label: "WHAT-IF STUDIO", path: "/what-if" },
+  { label: "TRUST DASHBOARD", path: "/dashboard" },
+  { label: "CONTACT", path: "/contact" },
 ];
 
 const socials = [
@@ -80,15 +107,13 @@ const socials = [
 ];
 
 const legalLinks = [
-  { num: "2.0", label: "ACCEPTABLE USE POLICY" },
-  { num: "2.1", label: "PRIVACY POLICY" },
-  { num: "2.2", label: "TERMS & CONDITIONS" },
-  { num: "2.3", label: "COOKIES" },
+  { num: "2.0", label: "ACCEPTABLE USE POLICY", path: "/legal/acceptable-use-policy" },
+  { num: "2.1", label: "PRIVACY POLICY", path: "/legal/privacy-policy" },
+  { num: "2.2", label: "TERMS & CONDITIONS", path: "/legal/terms-conditions" },
+  { num: "2.3", label: "COOKIES", path: "/legal/cookie-policy" },
 ];
 
 export function Footer() {
-  const navigate = useNavigate();
-
   return (
     <footer className="relative w-full overflow-hidden" style={{ backgroundColor: "#F4F4E8" }}>
       <GrainLocal opacity={0.03} />
@@ -116,12 +141,12 @@ export function Footer() {
             </FadeIn>
             <FadeIn delay={0.05}>
               <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: "clamp(2rem, 3vw, 2.5rem)", letterSpacing: "-0.04em", color: "#050505", margin: "0 0 16px 0", lineHeight: 1 }}>
-                NEWSLETTER
+                FRIGATE NOTES
               </h2>
             </FadeIn>
             <FadeIn delay={0.1}>
               <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#050505", opacity: 0.6, margin: 0, lineHeight: "150%", maxWidth: 320 }}>
-               Explainable AI insights and prompt engineering deep dives delivered monthly.
+               Product updates, explainability patterns, and prompt intelligence research for teams building with AI.
               </p>
             </FadeIn>
           </div>
@@ -141,7 +166,7 @@ export function Footer() {
               <div className="flex items-start gap-3">
                 <input type="checkbox" className="mt-0.5 cursor-pointer" style={{ accentColor: "#050505" }} />
                 <p style={{ ...mono, fontSize: 8, color: "#050505", opacity: 0.5, margin: 0, lineHeight: "160%" }}>
-                  BY SUBMITTING, YOU AGREE TO OUR TERMS AND PRIVACY POLICY.
+                  BY SUBMITTING, YOU AGREE TO RECEIVE FRIGATE UPDATES AND TO OUR PRIVACY TERMS.
                 </p>
               </div>
             </FadeIn>
@@ -169,7 +194,7 @@ export function Footer() {
                 className="w-full bg-[#050505] text-white flex items-center justify-between border-none cursor-pointer group transition-all duration-300 hover:brightness-125"
                 style={{ padding: "15px 20px", borderBottom: "4px solid #D1FF00" }}
               >
-                <span style={{ ...mono, fontSize: 11, fontWeight: 700 }}>SUBSCRIBE</span>
+                <span style={{ ...mono, fontSize: 11, fontWeight: 700 }}>GET UPDATES</span>
                 <span style={{ color: "#D1FF00", fontFamily: "monospace", fontSize: 16 }}>&gt;</span>
               </button>
             </FadeIn>
@@ -190,8 +215,8 @@ export function Footer() {
             </FadeIn>
             <FadeIn delay={0.15}>
               <p style={{ ...mono, fontSize: 9, color: "#050505", opacity: 0.5, margin: 0, lineHeight: "170%" }}>
-                GLOBAL GENERATION ENGINE<br />
-                DISTRIBUTED WORLDWIDE
+                EXPLAINABLE AI PLATFORM<br />
+                BUILT FOR TEXT + IMAGE
               </p>
             </FadeIn>
           </div>
@@ -203,7 +228,7 @@ export function Footer() {
           <div className="col-span-1 pr-0 md:pr-6 flex flex-col items-start gap-4">
             <FadeIn delay={0.2}>
               <div style={{ ...mono, fontSize: 12, fontWeight: 600, color: "#050505" }}>
-                INQUIRIES
+                PRODUCT TEAM
               </div>
             </FadeIn>
             <FadeIn delay={0.25}>
@@ -212,7 +237,7 @@ export function Footer() {
                 style={{ padding: "4px 8px", marginLeft: "-8px" }}
               >
                 <a
-                  href="mailto:SALES@FRIGATE.AI"
+                  href="mailto:HELLO@FRIGATE.AI"
                   style={{
                     ...mono,
                     fontSize: "clamp(0.95rem, 2.8vw, 1.125rem)",
@@ -222,7 +247,7 @@ export function Footer() {
                     overflowWrap: "anywhere"
                   }}
                 >
-                  SALES@FRIGATE.AI
+                  HELLO@FRIGATE.AI
                 </a>
               </div>
             </FadeIn>
@@ -276,7 +301,7 @@ export function Footer() {
               </FadeIn>
               {legalLinks.map((l, i) => (
                 <FadeIn key={l.num} delay={0.17 + i * 0.03}>
-                  <HoverSmallLink num={l.num} label={l.label} href="#" />
+                  <HoverSmallLink num={l.num} label={l.label} path={l.path} />
                 </FadeIn>
               ))}
             </div>
@@ -304,7 +329,7 @@ export function Footer() {
           <div className="col-span-1 flex flex-col justify-end text-left md:text-right">
             <FadeIn delay={0.2}>
               <p style={{ fontFamily: "Inter, sans-serif", fontSize: 9, color: "#050505", opacity: 0.35, lineHeight: "170%", margin: "0 0 12px 0" }}>
-                &copy; 2026 Frigate, Inc. All rights reserved. FRIGATE is a registered trademark of Frigate, Inc. All other trademarks, service marks, and trade names mentioned herein are the property of their respective owners. Built for transparency.
+                &copy; 2026 Frigate, Inc. All rights reserved. FRIGATE is a registered trademark of Frigate, Inc. Built for explainability, control, and trust.
               </p>
               <div style={{ ...mono, fontSize: 8, color: "#050505", opacity: 0.25 }}>
                 v2.4.1

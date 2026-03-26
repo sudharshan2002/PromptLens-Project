@@ -52,10 +52,10 @@ const sectionLabel = (num: string, title: string, light = false) => (
 /* ===== LOGO BAR ===== */
 function LogoBar() {
   const logos = [
-    { name: "FocalPoint", icon: "✺" },
-    { name: "Lightspeed", icon: "◐" },
-    { name: "Command+R", icon: "◩" },
-    { name: "Clandestine", icon: "✚" }
+    { name: "TEXT SYSTEMS", icon: "+" },
+    { name: "VISION WORKFLOWS", icon: "O" },
+    { name: "MULTIMODAL TEAMS", icon: "[]" },
+    { name: "PRODUCT OPS", icon: "X" }
   ];
   return (
     <div
@@ -159,7 +159,7 @@ function Hero() {
                 letterSpacing: "0.05em"
               }}
             >
-              [01] ELIMINATE YOUR BOTTLENECK_
+              [01] EXPLAIN THE OUTPUT_
             </div>
           </FadeIn>
 
@@ -186,10 +186,11 @@ function Hero() {
                   transition={{ delay: 1.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   style={{ display: "flex", flexWrap: "wrap", columnGap: "0.16em", rowGap: "0.08em", maxWidth: "100%", transformOrigin: "left bottom" }}
                 >
-                  <span>TRANSPARENT</span>
-                  <span>AI</span>
-                  <span>LOGIC</span>
-                  <span style={{ color: "#D1FF00" }}>[10X]</span>
+                  <span>SEE</span>
+                  <span>HOW</span>
+                  <span>PROMPTS</span>
+                  <span>SHAPE</span>
+                  <span style={{ color: "#D1FF00" }}>[OUTPUTS]</span>
                 </motion.div>
               </div>
               {/* Line 2 */}
@@ -200,10 +201,11 @@ function Hero() {
                   transition={{ delay: 1.55, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   style={{ display: "flex", flexWrap: "wrap", columnGap: "0.16em", rowGap: "0.08em", maxWidth: "100%", transformOrigin: "left bottom" }}
                 >
-                  <span>WITHOUT</span>
-                  <span>BLIND</span>
-                  <span style={{ color: "#D1FF00" }}>[SPOTS]</span>
-                  <span>NOW.</span>
+                  <span>THEN</span>
+                  <span>EDIT</span>
+                  <span>WITH</span>
+                  <span style={{ color: "#D1FF00" }}>[CONTROL]</span>
+                  <span>LIVE.</span>
                 </motion.div>
               </div>
             </h1>
@@ -221,7 +223,7 @@ function Hero() {
                 marginBottom: 60
               }}
             >
-              <span className="font-semibold text-[#F4F4E8]" style={{ opacity: 1 }}>Frigate builds explainable AI systems</span> that map every prompt to every output, so you can focus on creation, not confusion.
+              <span className="font-semibold text-[#F4F4E8]" style={{ opacity: 1 }}>Frigate is an explainable, interactive AI platform</span> for text, image, and multimodal generation that maps prompt segments to outputs and guides the next edit in real time.
             </p>
           </FadeIn>
 
@@ -251,7 +253,7 @@ function Hero() {
                 }}
                 className="relative z-10 group-hover:text-[#050505] transition-colors duration-300"
               >
-                OPEN COMPOSER
+                OPEN FRIGATE
               </span>
               <span
                 style={{
@@ -282,7 +284,7 @@ function Hero() {
                 textTransform: "uppercase"
               }}
             >
-              <span className="opacity-60">WHAT USED TO BE A BLACK BOX NOW GIVES YOU TOTAL</span> <span className="font-bold opacity-100">TRANSPARENCY AND CONTROL.</span>
+              <span className="opacity-60">PROMPTS ARE NO LONGER A BLACK BOX.</span> <span className="font-bold opacity-100">FRIGATE SHOWS WHAT MOVED THE RESULT.</span>
             </div>
 
             <button
@@ -310,7 +312,7 @@ function Hero() {
 
               <div className="absolute bottom-5 right-5 flex items-center bg-[#000000e0] px-3 py-2 rounded-sm border border-[#ffffff15]">
                 <div className="w-2 h-2 rounded-full bg-[#D1FF00] animate-pulse mr-2" />
-                <span style={{ ...mono, fontSize: 9, color: "#F4F4E8", fontWeight: 700 }}>LIVE EXPLAINER</span>
+                <span style={{ ...mono, fontSize: 9, color: "#F4F4E8", fontWeight: 700 }}>LIVE MAPPING</span>
               </div>
             </button>
           </FadeIn>
@@ -347,7 +349,7 @@ function Hero() {
               >
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-[#D1FF00]" />
-                  <span style={{ ...mono, fontSize: 10, color: "#F4F4E8", fontWeight: 700 }}>Frigate Explainer</span>
+                  <span style={{ ...mono, fontSize: 10, color: "#F4F4E8", fontWeight: 700 }}>Frigate Walkthrough</span>
                 </div>
 
                 <button
@@ -382,8 +384,75 @@ function Hero() {
 
 /* ===== MANIFESTO / WHO FRIGATE IS ===== */
 
-// Each character needs its own component to safely call useTransform
-function ScrollChar({ char, scrollYProgress, charIndex, totalChars }: {
+function ScrollRevealHeadline() {
+  const container = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: container,
+    offset: ["start 75%", "end 30%"]
+  });
+  const primaryOpacity = useTransform(scrollYProgress, [0, 0.42, 0.58, 0.66], [1, 1, 0.15, 0]);
+  const primaryY = useTransform(scrollYProgress, [0.42, 0.66], [0, -44]);
+  const primaryBlur = useTransform(scrollYProgress, [0.46, 0.66], ["blur(0px)", "blur(14px)"]);
+  const secondaryOpacity = useTransform(scrollYProgress, [0.5, 0.68, 0.82], [0, 0.85, 1]);
+  const secondaryY = useTransform(scrollYProgress, [0.5, 0.82], [44, 0]);
+  const secondaryScale = useTransform(scrollYProgress, [0.5, 0.82], [0.96, 1]);
+
+  return (
+    <div
+      ref={container}
+      className="relative w-full"
+      style={{
+        fontFamily: "'Söhne', Inter, sans-serif",
+        minHeight: "clamp(10rem, 20vw, 16rem)"
+      }}
+    >
+      <motion.h2
+        className="absolute inset-0 flex flex-col"
+        style={{
+          fontFamily: "'TASA Orbiter', Inter, sans-serif",
+          fontWeight: 900,
+          fontSize: "clamp(1.35rem, 3.05vw, 52px)",
+          lineHeight: "1.05",
+          letterSpacing: "-0.025em",
+          margin: 0,
+          textTransform: "uppercase",
+          opacity: primaryOpacity,
+          y: primaryY,
+          filter: primaryBlur
+        }}
+      >
+        <span>MOST AI TOOLS STILL HIDE THE WHY.</span>
+        <span>YOU SEE AN OUTPUT, NOT THE REASON.</span>
+      </motion.h2>
+      <motion.div
+        className="absolute inset-0 flex items-center"
+        style={{
+          opacity: secondaryOpacity,
+          y: secondaryY,
+          scale: secondaryScale
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "'TASA Orbiter', Inter, sans-serif",
+            fontWeight: 900,
+            fontSize: "clamp(1.5rem, 3.35vw, 58px)",
+            lineHeight: "0.98",
+            letterSpacing: "-0.04em",
+            margin: 0,
+            textTransform: "uppercase",
+            color: "#050505",
+            maxWidth: "16ch"
+          }}
+        >
+          Frigate eliminates them all.
+        </h2>
+      </motion.div>
+    </div>
+  );
+}
+
+function ManifestoScrollChar({ char, scrollYProgress, charIndex, totalChars }: {
   char: string; scrollYProgress: any; charIndex: number; totalChars: number
 }) {
   const step = 1 / totalChars;
@@ -412,17 +481,17 @@ function ScrollChar({ char, scrollYProgress, charIndex, totalChars }: {
   return <motion.span style={{ color }}>{char}</motion.span>;
 }
 
-function ScrollRevealHeadline() {
-  const container = useRef<HTMLDivElement>(null);
+function ManifestoHeadline() {
+  const container = useRef<HTMLHeadingElement>(null);
   const { scrollYProgress } = useScroll({
     target: container,
     offset: ["start 75%", "end 30%"]
   });
 
   const lines = [
-    "YOUR AI SHOULD EXPLAIN ITSELF.",
-    "EVERY PROMPT. EVERY OUTPUT. EVERY",
-    "DECISION. FULLY TRANSPARENT."
+    "AI SHOULD BE SOMETHING YOU CAN INSPECT.",
+    "EDIT. COMPARE. UNDERSTAND.",
+    "TRUST EVERY GENERATION."
   ];
 
   const totalChars = lines.join("").replace(/\s+/g, "").length;
@@ -433,9 +502,9 @@ function ScrollRevealHeadline() {
       ref={container}
       className="flex flex-col relative w-full"
       style={{
-        fontFamily: "'Söhne', Inter, sans-serif",
+        fontFamily: "'SÃ¶hne', Inter, sans-serif",
         fontWeight: 900,
-        fontSize: "clamp(2rem, 4.6vw, 82px)",
+        fontSize: "clamp(1.35rem, 3.05vw, 52px)",
         lineHeight: "1.05",
         letterSpacing: "-0.025em",
         margin: 0,
@@ -450,7 +519,7 @@ function ScrollRevealHeadline() {
                 const idx = charIndex;
                 charIndex++;
                 return (
-                  <ScrollChar
+                  <ManifestoScrollChar
                     key={j}
                     char={char}
                     scrollYProgress={scrollYProgress}
@@ -505,11 +574,11 @@ function Manifesto() {
                   letterSpacing: "0.05em"
                 }}
               >
-                [02] WHO FRIGATE IS_
+                [02] PRODUCT VISION_
               </div>
             </FadeIn>
 
-            <ScrollRevealHeadline />
+            <ManifestoHeadline />
           </div>
 
           {/* Bottom Grid Elements */}
@@ -554,13 +623,13 @@ function Manifesto() {
               <div>
                 <div style={{ fontFamily: "'Söhne', Inter, sans-serif", fontSize: "clamp(3rem, 6vw, 70px)", color: "#050505", lineHeight: 0.8, marginBottom: 0, fontWeight: 900, transform: "translateY(0.4em)" }}>&ldquo;</div>
                 <p style={{ fontFamily: "Inter, sans-serif", fontSize: "clamp(1.2rem, 2vw, 24px)", lineHeight: "1.4", color: "#050505", letterSpacing: "-0.015em" }}>
-                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Frigate is a precision engine designed to eliminate the 'black box' of AI generation once and for all.
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Frigate is a creative cockpit for AI: a prompt debugger, an explainability layer, and a co-creator that shows its work.
                 </p>
                 <div className="flex items-center gap-4 mt-8">
                   <div className="rounded-full bg-[#D1FF00] flex items-center justify-center font-bold text-[10px]" style={{ width: 44, height: 44, color: "#050505" }}>SR</div>
                   <div>
-                    <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 800, fontSize: 11, letterSpacing: "0.05em", color: "#050505", textTransform: "uppercase" }}>Founder Name</div>
-                    <div style={{ ...mono, fontSize: 9, color: "#050505", opacity: 0.5, marginTop: 4 }}>Founder & CEO</div>
+                    <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 800, fontSize: 11, letterSpacing: "0.05em", color: "#050505", textTransform: "uppercase" }}>Frigate Platform</div>
+                    <div style={{ ...mono, fontSize: 9, color: "#050505", opacity: 0.5, marginTop: 4 }}>Product Vision</div>
                   </div>
                 </div>
               </div>
@@ -658,10 +727,10 @@ const StatColumn = ({
 
 function Stats() {
   const stats = [
-    { value: "50+", label: "SUCCESSFUL DEPLOYMENTS", bars: 6, blackBars: 3 },
-    { value: "83%", label: "REDUCTION IN PROCESSING TIME", bars: 11, blackBars: 8 },
-    { value: "245K", label: "HOURS AUTOMATED FOR CLIENTS", bars: 14, blackBars: 11 },
-    { value: "$12.4M", label: "COST SAVINGS DELIVERED", bars: 17, blackBars: 14 }
+    { value: "TEXT + IMAGE", label: "MULTIMODAL INPUTS", bars: 6, blackBars: 4 },
+    { value: "LIVE", label: "WHAT-IF EDITING", bars: 11, blackBars: 9 },
+    { value: "TOKEN", label: "TEXT INFLUENCE TRACING", bars: 14, blackBars: 12 },
+    { value: "REGION", label: "IMAGE OVERLAY MAPPING", bars: 17, blackBars: 15 }
   ];
 
   return (
@@ -758,25 +827,25 @@ function Problems() {
   );
 
   const h1Lines = [
-    "CURRENT AI IS A BLACK BOX.",
-    "YOU PUT IN A PROMPT AND PRAY."
+    "MOST AI TOOLS STILL HIDE THE WHY.",
+    "YOU SEE AN OUTPUT, NOT THE REASON."
   ];
-  const h2Text = "FRIGATE ELIMINATES THEM ALL";
+  const h2Text = "FRIGATE ELIMINATES THEM ALL.";
 
-  // H1 Exit: Early Safe Exit - 0.60 to 0.70
-  const h1Scale = useTransform(scrollYProgress, [0.60, 0.70], [1, 1.4]);
-  const h1Opacity = useTransform(scrollYProgress, [0, 0.60, 0.68], [1, 1, 0]);
-  const h1Blur = useTransform(scrollYProgress, [0.60, 0.70], ["blur(0px)", "blur(50px)"]);
+  // H1 Exit: Push the old title fully out before the handover finishes.
+  const h1Scale = useTransform(scrollYProgress, [0.56, 0.68], [1, 1.16]);
+  const h1Opacity = useTransform(scrollYProgress, [0, 0.54, 0.62, 0.68], [1, 1, 0.12, 0]);
+  const h1Blur = useTransform(scrollYProgress, [0.56, 0.68], ["blur(0px)", "blur(16px)"]);
 
-  // H2 Entry & Reveal: Starts at 0.62, Solid by 0.70, Fades at 0.90
-  const h2Scale = useTransform(scrollYProgress, [0.62, 0.72], [0.8, 1]);
-  const h2Opacity = useTransform(scrollYProgress, [0.62, 0.72, 0.90, 0.95], [0, 1, 1, 0]);
-  const h2Blur = useTransform(scrollYProgress, [0.62, 0.72, 0.90, 0.95], ["blur(30px)", "blur(0px)", "blur(0px)", "blur(20px)"]);
+  // H2 Entry & Reveal: Comes in after H1 is already falling away.
+  const h2Scale = useTransform(scrollYProgress, [0.62, 0.74], [0.92, 1]);
+  const h2Opacity = useTransform(scrollYProgress, [0.6, 0.72, 0.9, 0.95], [0, 1, 1, 0]);
+  const h2Blur = useTransform(scrollYProgress, [0.6, 0.72, 0.9, 0.95], ["blur(18px)", "blur(0px)", "blur(0px)", "blur(12px)"]);
 
-  const p1 = ["Unpredictable outputs", "No visibility", "Can't debug"];
-  const p2 = ["No confidence scoring", "Blind iteration", "Zero audit trail"];
-  const p3 = ["No influence mapping", "Inconsistent quality", "Fragmented UI"];
-  const p4 = ["Black box generation", "Manual engineering", "Lack of trust"];
+  const p1 = ["No prompt breakdown", "No causal trace", "No edit guidance"];
+  const p2 = ["Hidden style shifts", "Weak trust", "Slow iteration"];
+  const p3 = ["No token reasoning", "No image overlays", "No delta view"];
+  const p4 = ["Fragmented tooling", "Blind retries", "Hard to scale"];
 
   return (
     <div ref={container} className="relative h-[600vh]">
@@ -806,54 +875,19 @@ function Problems() {
             className="absolute inset-0 flex flex-col items-center justify-center gap-2"
           >
             {h1Lines.map((line, lIdx) => (
-              <div key={lIdx} className="flex flex-wrap justify-center">
-                {line.split("").map((char, i) => {
-                  const globalIdx = lIdx * 30 + i;
-                  const totalChars = 60; // Approximate for H1
-                  const start = (globalIdx / totalChars) * 0.28; // Slightly slower stagger for distinctness
-
-                  // One-by-one Color Reveal (Frigate Sequence)
-                  const color = useTransform(
-                    scrollYProgress,
-                    [
-                      0, 
-                      start, 
-                      start + 0.01, 
-                      start + 0.02, 
-                      start + 0.03, 
-                      start + 0.04, 
-                      0.35,         // Solid Black
-                      0.42          // Transition to Beige
-                    ],
-                    [
-                      "rgba(5,5,5,0.10)",
-                      "rgba(5,5,5,0.10)",
-                      "rgba(5,5,5,0.45)",
-                      "#D1FF00",
-                      "#D1FF00",
-                      "#050505",
-                      "#050505",
-                      "#FFFFED"
-                    ]
-                  );
-
-                  return (
-                    <motion.span
-                      key={i}
-                      style={{
-                        color,
-                        fontFamily: "Inter, sans-serif",
-                        fontWeight: 900,
-                        fontSize: "clamp(1.5rem, 4vw, 3.5rem)",
-                        lineHeight: "0.95",
-                        letterSpacing: "-0.05em",
-                        textTransform: "uppercase"
-                      }}
-                    >
-                      {char === " " ? "\u00A0" : char}
-                    </motion.span>
-                  );
-                })}
+              <div
+                key={lIdx}
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: 900,
+                  fontSize: "clamp(1.5rem, 4vw, 3.5rem)",
+                  lineHeight: "0.95",
+                  letterSpacing: "-0.05em",
+                  textTransform: "uppercase",
+                  color: "#050505",
+                }}
+              >
+                {line}
               </div>
             ))}
           </motion.div>
@@ -914,24 +948,24 @@ function Features() {
 
   const steps = [
     {
-      step: "WEEK 1",
-      title: "PROCESS AUDIT",
-      body: "Frigate maps your prompts, identifies influence nodes, and calculates potential clarity."
+      step: "STEP 1",
+      title: "PROMPT SEGMENTATION",
+      body: "Break text, image references, and modifiers into explainable segments with influence candidates."
     },
     {
-      step: "WEEK 2-3",
-      title: "SOLUTION DESIGN",
-      body: "Custom AI architecture tailored to your systems and requirements."
+      step: "STEP 2",
+      title: "GENERATE + TRACE",
+      body: "Run the generation pipeline while collecting token-level and region-level signals from the model stack."
     },
     {
-      step: "WEEK 4-5",
-      title: "BUILD & TEST",
-      body: "Development, integration, and rigorous testing with your team."
+      step: "STEP 3",
+      title: "MAP THE RESULT",
+      body: "Link each segment to highlighted text spans, visual regions, and style shifts inside the output."
     },
     {
-      step: "WEEK 6",
-      title: "DEPLOY AND TRAIN",
-      body: "Launch with full team training and ongoing monitoring."
+      step: "STEP 4",
+      title: "GUIDE THE NEXT EDIT",
+      body: "Score confidence, clarity, and drift, then recommend the smallest changes with the biggest effect."
     }
   ];
 
@@ -967,7 +1001,7 @@ function Features() {
                   letterSpacing: "0.08em"
                 }}
               >
-                [04] HOW IT WORKS_
+                [04] CORE LOOP_
               </div>
             </BlurReveal>
           </div>
@@ -994,7 +1028,7 @@ function Features() {
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                     viewport={{ once: true }}
                   >
-                    LIGHTNING-QUICK
+                    EXPLAINABILITY
                   </motion.div>
                 </div>
                 <div style={{ overflow: "hidden", marginTop: "0.02em" }}>
@@ -1004,7 +1038,7 @@ function Features() {
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
                     viewport={{ once: true }}
                   >
-                    DEPLOYMENT.
+                    INSIDE GENERATION.
                   </motion.div>
                 </div>
               </h2>
@@ -1021,9 +1055,9 @@ function Features() {
                   color: frigateMuted
                 }}
               >
-                From first call to live
+                Not a plugin and not an afterthought.
                 <br />
-                automation in just 6 weeks.
+                Frigate makes the explanation layer part of the product.
               </p>
             </BlurReveal>
           </div>
@@ -1150,18 +1184,18 @@ function Process() {
   const items = [
     {
       icon: Activity,
-      title: "Continuous Intelligence",
-      body: "Real-time tracking of token drift and influence shifts. Automated analysis of performance metrics to ensure zero degradation."
+      title: "Multimodal Pipeline",
+      body: "One system for text, image, and hybrid prompts with a consistent explanation layer across every mode."
     },
     {
       icon: Wrench,
-      title: "Automated Optimization",
-      body: "Scheduled recommendations to maximize output quality. Add new generation nodes, adjust prompt weights, and scale complex pipelines."
+      title: "Real-Time What-If",
+      body: "Compare prompt versions side by side, inspect deltas, and see exactly which phrase changed the result."
     },
     {
       icon: Headphones,
-      title: "Direct Support",
-      body: "Priority access to prompt engineering experts. Train your team, update processes, and scale with architectural guidance."
+      title: "Trust Dashboard",
+      body: "Track confidence, clarity, output quality, and satisfaction from single runs all the way up to team-level patterns."
     }
   ];
 
@@ -1202,8 +1236,8 @@ function Process() {
                   maxWidth: 560
                 }}
               >
-                <div style={{ color: "#737373" }}>What Happens</div>
-                <div style={{ color: frigateText }}>Post-Launch?</div>
+                  <div style={{ color: "#737373" }}>Why Teams Use</div>
+                  <div style={{ color: frigateText }}>Frigate</div>
               </div>
             </BlurReveal>
           </div>
@@ -1220,8 +1254,8 @@ function Process() {
                   maxWidth: 760
                 }}
               >
-                <div style={{ color: "#707070" }}>Frigate doesn&apos;t disappear after deployment.</div>
-                <div style={{ color: frigateText, marginTop: 4 }}>Your generation workflow gets better over time.</div>
+                <div style={{ color: "#707070" }}>Frigate is designed for production workflows, not one-off demos.</div>
+                <div style={{ color: frigateText, marginTop: 4 }}>The system stays understandable as your AI stack grows.</div>
               </div>
             </BlurReveal>
           </div>
@@ -1301,7 +1335,7 @@ function Testimonial() {
         className="relative z-10 mx-auto"
         style={{
           maxWidth: 1920,
-          padding: "clamp(130px, 15vw, 190px) clamp(20px, 3vw, 48px) clamp(120px, 13vw, 165px)"
+          padding: "clamp(88px, 10vw, 128px) clamp(20px, 3vw, 48px) clamp(120px, 13vw, 165px)"
         }}
       >
         <div className="grid grid-cols-1 md:grid-cols-4 w-full">
@@ -1320,8 +1354,8 @@ function Testimonial() {
                   maxWidth: 560
                 }}
               >
-                <div style={{ color: frigateText }}>Don&apos;t Take Our</div>
-                <div style={{ color: frigateText }}>Word For It.</div>
+                <div style={{ color: frigateText }}>The Product</div>
+                <div style={{ color: frigateText }}>Promise.</div>
               </div>
             </BlurReveal>
 
@@ -1336,9 +1370,9 @@ function Testimonial() {
                   color: frigateMuted
                 }}
               >
-                Companies that deployed
+                Users should not just get outputs.
                 <br />
-                automation and never looked back.
+                They should understand, control, and trust them.
               </p>
             </BlurReveal>
           </div>
@@ -1378,7 +1412,7 @@ function Testimonial() {
                 style={{
                   fontFamily: "'TASA Orbiter', Inter, sans-serif",
                   fontWeight: 900,
-                  fontSize: "clamp(1.55rem, 2.35vw, 2.6rem)",
+                  fontSize: "clamp(1.3rem, 1.95vw, 2.15rem)",
                   lineHeight: 0.98,
                   letterSpacing: "-0.058em",
                   textTransform: "uppercase",
@@ -1386,7 +1420,7 @@ function Testimonial() {
                   maxWidth: 1450
                 }}
               >
-                Our generation pipeline was a "black box" until we integrated Frigate. Now, every token is mapped, every weight is understood, and our production accuracy has increased by 40%. It&apos;s the infrastructure for the next generation of AI.
+                Frigate turns generation from trial-and-error into an inspectable workflow. You can see which words changed tone, which phrases added complexity, and where the output picked it up.
               </motion.div>
             </FadeIn>
           </div>
@@ -1421,7 +1455,7 @@ function Testimonial() {
                   letterSpacing: "-0.03em"
                 }}
               >
-                SYSTEM VERIFICATION
+                PRODUCT VISION
               </div>
             </motion.div>
           </FadeIn>
@@ -1434,7 +1468,7 @@ function Testimonial() {
               viewport={{ once: true }}
               transition={{ duration: 0.75, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="rounded-full bg-[#D1FF00] flex items-center justify-center font-bold text-[11px]" style={{ width: 44, height: 44, color: "#050505" }}>SR</div>
+              <div className="rounded-full bg-[#D1FF00] flex items-center justify-center font-bold text-[11px]" style={{ width: 44, height: 44, color: "#050505" }}>FP</div>
               <div>
                 <div
                   style={{
@@ -1447,7 +1481,7 @@ function Testimonial() {
                     marginBottom: 4
                   }}
                 >
-                  SUDHARSHAN RAVICHANDRAN
+                  FRIGATE PLATFORM
                 </div>
                 <div
                   style={{
@@ -1459,7 +1493,7 @@ function Testimonial() {
                     color: frigateMuted
                   }}
                 >
-                  FOUNDER & CEO
+                  PRODUCT PRINCIPLE
                 </div>
               </div>
             </motion.div>
@@ -1484,12 +1518,12 @@ function FinalCTA() {
         </FadeIn>
         <AnimatedHeadline className="mb-8">
           <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: "clamp(2.5rem, 6vw, 5rem)", lineHeight: "105%", letterSpacing: "-0.04em", textTransform: "uppercase", color: "#050505" }}>
-            READY TO SEE INSIDE YOUR AI?
+            BUILD WITH EXPLAINABILITY FIRST.
           </span>
         </AnimatedHeadline>
         <FadeIn delay={0.2}>
           <p className="mx-auto mb-10" style={{ fontFamily: "Inter, sans-serif", fontSize: 16, lineHeight: "175%", color: "#050505", opacity: 0.55, maxWidth: 480 }}>
-            Open the Composer and generate your first explainable output. No setup. No credit card.
+            Open the Composer to map prompt influence, compare edits, and start shaping outputs with clarity.
           </p>
         </FadeIn>
         <FadeIn delay={0.3}>
@@ -1505,7 +1539,7 @@ function FinalCTA() {
             onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.25)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
           >
-            Open Composer &rarr;
+            Open Frigate &rarr;
           </button>
         </FadeIn>
       </div>

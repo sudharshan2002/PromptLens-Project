@@ -26,9 +26,9 @@ type MenuPhase = "closed" | "opening" | "open" | "closing";
 const menuLinks: MenuTarget[] = [
   { label: "HOME", path: "/" },
   { label: "COMPOSER", path: "/composer" },
-  { label: "WHAT IF ANALYSIS", path: "/what-if" },
-  { label: "INSIGHTS", path: "/dashboard" },
-  { label: "CONTACT", path: "/", hash: "#contact" },
+  { label: "WHAT-IF STUDIO", path: "/what-if" },
+  { label: "TRUST DASHBOARD", path: "/dashboard" },
+  { label: "CONTACT", path: "/contact" },
 ];
 
 const socials = [
@@ -40,13 +40,13 @@ const socials = [
 
 const utilityLinks: MenuTarget[] = [
   { label: "COMPOSER", path: "/composer" },
-  { label: "WHAT IF ANALYSIS", path: "/what-if" },
-  { label: "INSIGHTS", path: "/dashboard" },
-  { label: "CONTACT", path: "/", hash: "#contact" },
+  { label: "WHAT-IF STUDIO", path: "/what-if" },
+  { label: "TRUST DASHBOARD", path: "/dashboard" },
+  { label: "CONTACT", path: "/contact" },
 ];
 
-const featuredCardTagline = "Signal over guesswork";
-const featuredCardBody = "How Frigate identified ghost tokens for a leading design studio, increasing consistency by 99.9%.";
+const featuredCardTagline = "Explainability by default";
+const featuredCardBody = "How Frigate surfaced the exact phrase that pushed a generation off-course, then guided the fix in one edit.";
 
 function MenuWipe({ active, cycleKey }: { active: boolean; cycleKey: number }) {
   return (
@@ -312,7 +312,7 @@ export function Navbar() {
           </div>
 
           <div className="hidden items-center md:flex">
-            <span style={{ ...mono, fontSize: 9, color: "#fff", opacity: 0.62 }}>EXPLAINABLE AI ENGINE</span>
+            <span style={{ ...mono, fontSize: 9, color: "#fff", opacity: 0.62 }}>PROMPT INTELLIGENCE PLATFORM</span>
           </div>
 
           <div className="hidden items-center md:flex">
@@ -382,7 +382,7 @@ export function Navbar() {
                 </div>
 
                 <div className="hidden items-center md:flex">
-                  <span style={{ ...mono, fontSize: 9, color: "#050505", opacity: 0.42 }}>EXPLAINABLE AI ENGINE</span>
+                  <span style={{ ...mono, fontSize: 9, color: "#050505", opacity: 0.42 }}>PROMPT INTELLIGENCE PLATFORM</span>
                 </div>
 
                 <div className="hidden items-center md:flex">
@@ -454,7 +454,7 @@ export function Navbar() {
                           transform: "rotate(180deg)",
                         }}
                       >
-                        Dec 1, 2025
+                        Product brief
                       </div>
 
                       <div
@@ -471,7 +471,7 @@ export function Navbar() {
                           transform: "rotate(180deg)",
                         }}
                       >
-                        Enterprise software
+                        Text + image AI
                       </div>
 
                       <ImageWithFallback
@@ -502,10 +502,10 @@ export function Navbar() {
                             marginBottom: 8,
                           }}
                         >
-                          99.9%
+                          TEXT
                         </div>
                         <div style={{ ...mono, fontSize: 9, color: "#F4F4E8", opacity: 0.52, marginBottom: 18 }}>
-                          Mapping Precision
+                          Prompt trace
                         </div>
 
                         <div
@@ -518,10 +518,10 @@ export function Navbar() {
                             marginBottom: 8,
                           }}
                         >
-                          3X
+                          IMAGE
                         </div>
                         <div style={{ ...mono, fontSize: 9, color: "#F4F4E8", opacity: 0.52 }}>
-                          Iteration speed
+                          Output trace
                         </div>
                       </div>
 

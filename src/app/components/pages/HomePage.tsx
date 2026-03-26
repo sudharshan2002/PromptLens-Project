@@ -1434,7 +1434,7 @@ function Testimonial() {
               viewport={{ once: true }}
               transition={{ duration: 0.75, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="rounded-full bg-[#D1FF00] flex items-center justify-center font-bold text-[11px]" style={{ width: 44, height: 44, color: "#050505" }}>SA</div>
+              <div className="rounded-full bg-[#D1FF00] flex items-center justify-center font-bold text-[11px]" style={{ width: 44, height: 44, color: "#050505" }}>SR</div>
               <div>
                 <div
                   style={{
@@ -1447,7 +1447,7 @@ function Testimonial() {
                     marginBottom: 4
                   }}
                 >
-                  SYSTEM ARCHITECT
+                  SUDHARSHAN RAVICHANDRAN
                 </div>
                 <div
                   style={{
@@ -1459,7 +1459,7 @@ function Testimonial() {
                     color: frigateMuted
                   }}
                 >
-                  CORE PLATFORM USER
+                  FOUNDER & CEO
                 </div>
               </div>
             </motion.div>

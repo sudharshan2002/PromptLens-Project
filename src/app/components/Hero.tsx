@@ -67,31 +67,35 @@ export function Hero() {
         <FadeIn delay={2}>
           <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
             <a
-              href="#contact"
+              href="#composer"
               style={{
                 fontFamily: "'Roboto Mono', monospace",
                 fontSize: 13,
                 fontWeight: 600,
-                color: "#D1FF00",
-                backgroundColor: "#050505",
+                color: "#050505",
+                backgroundColor: "#D1FF00",
                 padding: "14px 32px",
                 borderRadius: 4,
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 textDecoration: "none",
-                transition: "transform 0.2s ease-out, box-shadow 0.2s ease-out",
+                transition: "all 0.3s ease-out",
                 display: "inline-block",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-2px)";
                 e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.2)";
+                e.currentTarget.style.backgroundColor = "#2a2d24";
+                e.currentTarget.style.color = "#D1FF00";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.backgroundColor = "#D1FF00";
+                e.currentTarget.style.color = "#050505";
               }}
             >
-              Start Composing
+              Open Composer
             </a>
             <a
               href="#services"

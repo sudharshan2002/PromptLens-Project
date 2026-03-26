@@ -886,9 +886,9 @@ export function TechStack() {
 export function Team() {
   const members = [
     { name: "Sudharshan Ravichandran", role: "Founder & CEO", bio: "Platform Architect. Leading the vision for explainable multimodal generation." },
-    { name: "Jordan Park", role: "Head of Engineering", bio: "Built automation systems for Fortune 500 companies." },
-    { name: "Maya Thompson", role: "AI Solutions Architect", bio: "PhD in Machine Learning. Expert in NLP and LLMs." },
-    { name: "Sam Okafor", role: "Operations Lead", bio: "Scaled ops at 3 startups from seed to Series B." },
+    { name: "ENGINEERING LEAD", role: "Head of Systems", bio: "Architecting automation systems for mission-critical infrastructure." },
+    { name: "SOLUTIONS ARCHITECT", role: "AI Infrastructure", bio: "Leading the integration of complex generation pipelines." },
+    { name: "OPERATIONS LEAD", role: "Growth & Scale", bio: "Optimizing operational efficiency for global platform delivery." },
   ];
 
   return (

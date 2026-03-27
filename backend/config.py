@@ -19,6 +19,14 @@ def _parse_bool(value: str | None, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _default_sqlite_path() -> Path:
+    """Prefer a persistent Render disk when present, otherwise keep local storage in backend/."""
+    render_disk_path = os.getenv("RENDER_DISK_PATH")
+    if render_disk_path:
+        return Path(render_disk_path) / "metrics.db"
+    return BASE_DIR / "metrics.db"
+
+
 @dataclass(frozen=True)
 class Settings:
     """Application settings loaded from environment variables."""
@@ -50,7 +58,7 @@ class Settings:
 def get_settings() -> Settings:
     """Load and cache environment-backed settings."""
     cors_origins = os.getenv("CORS_ORIGINS", "*")
-    db_path = os.getenv("SQLITE_DB_PATH", str(BASE_DIR / "metrics.db"))
+    db_path = os.getenv("SQLITE_DB_PATH", str(_default_sqlite_path()))
 
     return Settings(
         app_name=os.getenv("APP_NAME", "PromptLens Backend"),

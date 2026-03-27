@@ -173,38 +173,40 @@ function ContactHero() {
             </FadeIn>
           </div>
 
-          <FadeIn delay={0.84} className="mt-12 md:mt-0">
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <FadeIn delay={0.84} className="mt-12 md:mt-0">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
               <a
                 href={mailtoLink("Frigate contact request")}
-                className="group inline-flex items-center justify-between gap-4 no-underline"
+                className="group inline-flex items-center justify-between gap-3 no-underline"
                 style={{
                   ...mono,
                   backgroundColor: palette.lime,
                   color: palette.black,
-                  padding: "18px 22px",
-                  minWidth: 260,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "13px 16px",
                 }}
               >
                 <span>Email Product Team</span>
-                <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+                <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
               </a>
 
               <button
                 type="button"
                 onClick={() => navigate("/composer")}
-                className="group inline-flex items-center justify-between gap-4 border cursor-pointer"
+                className="group inline-flex items-center justify-between gap-3 border cursor-pointer"
                 style={{
                   ...mono,
                   backgroundColor: "transparent",
                   color: palette.cream,
                   borderColor: "rgba(255,255,255,0.18)",
-                  padding: "18px 22px",
-                  minWidth: 240,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "13px 16px",
                 }}
               >
                 <span>Open Composer</span>
-                <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+                <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
               </button>
             </div>
           </FadeIn>

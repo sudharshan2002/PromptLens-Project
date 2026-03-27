@@ -230,95 +230,41 @@ function Hero() {
             </p>
           </FadeIn>
 
-          {/* Button: Exactly 1/3 of the 3-column span = exactly width of Column 1 */}
-          <FadeIn delay={2.1} className="relative w-full sm:max-w-[28rem]">
-            <motion.div
-              className="mb-3 flex items-center gap-2"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 2.15, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <motion.span
-                className="inline-flex items-center border border-[#d1ff0044] px-3 py-1"
-                style={{
-                  ...mono,
-                  fontSize: 10,
-                  color: "#D1FF00",
-                  background: "rgba(209,255,0,0.08)",
-                  boxShadow: "0 0 0 1px rgba(209,255,0,0.06) inset",
-                }}
-                animate={prefersReducedMotion ? undefined : { opacity: [0.72, 1, 0.72], borderColor: ["rgba(209,255,0,0.28)", "rgba(209,255,0,0.62)", "rgba(209,255,0,0.28)"] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-              >
-                Primary Path
-              </motion.span>
-              <span style={{ ...mono, fontSize: 10, color: "rgba(244,244,232,0.54)" }}>
-                Launch the live workspace
-              </span>
-            </motion.div>
-
+          <FadeIn delay={2.1} className="relative w-full">
             <motion.button
               onClick={() => navigate("/composer")}
-              className="cursor-pointer group relative flex items-center justify-between overflow-hidden"
+              className="cursor-pointer group inline-flex items-center gap-3 border"
               whileHover={prefersReducedMotion ? undefined : { y: -2 }}
               whileTap={prefersReducedMotion ? undefined : { scale: 0.988 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               style={{
-                width: "100%",
-                minHeight: "68px",
-                padding: "0 22px",
-                border: "1px solid #D1FF00",
+                ...mono,
+                minHeight: "46px",
+                padding: "0 16px",
+                borderColor: "rgba(244,244,232,0.18)",
+                background: "rgba(255,255,255,0.02)",
+                color: "#F4F4E8",
                 outline: "none",
-                borderBottom: "3px solid #a8cc00",
-                background: "#D1FF00",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.07em",
+                backdropFilter: "blur(8px)",
               }}
             >
-              <motion.div
-                className="pointer-events-none absolute inset-x-0 top-0 z-0 h-px"
+              <span className="transition-colors duration-300 group-hover:text-white">
+                Open Composer
+              </span>
+              <motion.span
                 style={{
-                  background: "linear-gradient(90deg, rgba(5,5,5,0) 0%, rgba(5,5,5,0.55) 50%, rgba(5,5,5,0) 100%)",
+                  color: "#D1FF00",
+                  fontSize: 14,
+                  lineHeight: 1,
                 }}
-                animate={prefersReducedMotion ? undefined : { x: ["-110%", "120%"] }}
-                transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
-              />
-              <div className="pointer-events-none absolute left-0 top-0 z-0 h-full w-[4px] bg-[#050505]" />
-              <div className="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full bg-[#050505]" />
-
-              <div className="relative z-10 flex flex-col items-start gap-2">
-                <span style={{ ...mono, fontSize: 9, color: "rgba(5,5,5,0.58)" }}>
-                  Enter the composer
-                </span>
-                <span
-                  style={{
-                    ...mono,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: "#050505",
-                    letterSpacing: "0.08em",
-                  }}
-                  className="transition-colors duration-300"
-                >
-                  OPEN FRIGATE
-                </span>
-              </div>
-
-              <div className="relative z-10 flex items-center gap-5">
-                <div className="h-8 w-px bg-[rgba(5,5,5,0.18)]" />
-                <motion.span
-                  style={{
-                    color: "#050505",
-                    fontSize: 20,
-                    fontWeight: 900,
-                    marginTop: "-2px"
-                  }}
-                  animate={prefersReducedMotion ? undefined : { x: [0, 3, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  &gt;
-                </motion.span>
-              </div>
-
-              <div className="absolute inset-0 bg-[rgba(5,5,5,0.06)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-[1] pointer-events-none" />
+                animate={prefersReducedMotion ? undefined : { x: [0, 2, 0] }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              >
+                &gt;
+              </motion.span>
             </motion.button>
           </FadeIn>
 

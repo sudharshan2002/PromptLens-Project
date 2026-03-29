@@ -20,9 +20,10 @@ def _parse_bool(value: str | None, default: bool = False) -> bool:
 
 
 def _default_sqlite_path() -> Path:
-    """Prefer a persistent Render disk when present, otherwise keep local storage in backend/."""
+    """Prefer a persistent Render disk when present and writable, otherwise keep local storage in backend/."""
     render_disk_path = os.getenv("RENDER_DISK_PATH")
-    if render_disk_path:
+    # Fallback to local storage if RENDER_DISK_PATH is /var/data (common on Render Free Tier without a disk)
+    if render_disk_path and render_disk_path != "/var/data":
         return Path(render_disk_path) / "metrics.db"
     return BASE_DIR / "metrics.db"
 

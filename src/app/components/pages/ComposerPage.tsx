@@ -49,8 +49,8 @@ const frigateText = "#050505";
 const frigateMuted = "#686868";
 
 const starterPrompts: Record<GenerationMode, string> = {
-  image: "Premium Frigate launch hero, glass cockpit interface, prompt-to-output mapping arcs, calm cinematic lighting, controlled lime signal accents",
-  text: "Frigate helps AI teams trace why a prompt produced a result, compare revisions safely, and launch with more confidence.",
+  image: "A minimalist workspace bathed in natural sunlight. A sleek laptop sits on a wooden desk next to a small potted succulent. Clean, modern, 4k photography.",
+  text: "Write a short, engaging welcome email for new users of a productivity app, highlighting the main dashboard and calendar features. Keep it friendly.",
 };
 
 const suggestionMap: Record<GenerationMode, string[]> = {
@@ -67,8 +67,8 @@ const suggestionMap: Record<GenerationMode, string[]> = {
 };
 
 const composerPlaceholders: Record<GenerationMode, string> = {
-  image: "Frigate hero frame, luminous operator glass, visible influence ribbons, restrained cinematic light",
-  text: "Frigate gives review teams a clear read on prompt intent, output risk, and the next safe edit.",
+  image: "Describe the image (e.g., subject, lighting, style)...",
+  text: "Draft the request (e.g., topic, format, tone)...",
 };
 
 function ConfidenceMeter({ value, label }: { value: number; label: string }) {
@@ -422,7 +422,7 @@ export function ComposerPage() {
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               rows={5}
-              className="w-full resize-none outline-none"
+              className="w-full resize-none outline-none focus:ring-1 focus:ring-[#D1FF00] transition-shadow"
               placeholder={composerPlaceholders[mode]}
               style={{
                 fontFamily: "Inter, sans-serif",
@@ -430,6 +430,8 @@ export function ComposerPage() {
                 color: frigateText,
                 backgroundColor: "#F9F8EF",
                 border: "1px solid #00000010",
+                borderRadius: 8,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
                 lineHeight: "175%",
                 padding: 20,
               }}
@@ -442,7 +444,7 @@ export function ComposerPage() {
                     Live Segmentation {isAnalyzing && <span className="animate-pulse" style={{ color: "#D1FF00" }}>• Analyzing...</span>}
                   </div>
                   <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, margin: 0 }}>
-                    Real-time prompt structure and intent tracking.
+                    Real-time prompt tracking.
                   </p>
                 </div>
                 <span style={{ ...mono, fontSize: 10, color: isDraftDirty ? "#1A3D1A" : frigateMuted }}>
@@ -457,12 +459,14 @@ export function ComposerPage() {
                       key={`${segment.text}-${index}`}
                       onMouseEnter={() => setActiveSegment(index)}
                       onMouseLeave={() => setActiveSegment(null)}
-                      className="cursor-default border-none flex flex-col items-start gap-1"
+                      className="cursor-default flex flex-col items-start gap-1 transition-colors"
                       style={{
                         fontFamily: "Inter, sans-serif",
                         color: frigateText,
                         backgroundColor: activeSegment === index ? segment.color : "#F9F8EF",
                         border: `1px solid ${activeSegment === index ? segment.color : "#00000010"}`,
+                        borderRadius: 6,
+                        boxShadow: activeSegment === index ? `0 2px 8px ${segment.color}40` : "none",
                         padding: "10px 14px",
                         minWidth: 100,
                       }}
@@ -514,20 +518,22 @@ export function ComposerPage() {
             </div>
             <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, marginBottom: 16 }}>
               {isDraftDirty
-                ? "Live segment influence preview."
-                : "Influence mapping from the last run."}
+                ? "Live preview."
+                : "Last run mapping."}
             </p>
             <div className="flex flex-wrap gap-3">
               {segments.length > 0 ? (
                 segments.map((segment, index) => (
                   <motion.button
                     key={`${segment.text}-${index}`}
-                    className="cursor-pointer border-none flex flex-col items-start gap-1"
+                    className="cursor-pointer flex flex-col items-start gap-1 transition-colors"
                     style={{
                       fontFamily: "Inter, sans-serif",
                       color: frigateText,
                       backgroundColor: activeSegment === index ? segment.color : "#F9F8EF",
                       border: `1px solid ${activeSegment === index ? segment.color : "#9C9C9C20"}`,
+                      borderRadius: 6,
+                      boxShadow: activeSegment === index ? `0 2px 8px ${segment.color}40` : "none",
                       padding: "10px 14px",
                       minWidth: 120,
                     }}
@@ -541,7 +547,7 @@ export function ComposerPage() {
                       <span style={{ ...mono, fontSize: 8, opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                         {segment.label}
                       </span>
-                      <span style={{ ...mono, fontSize: 9, opacity: 0.5 }}>{Math.round(segment.influence * 100)}%</span>
+                      <span style={{ ...mono, fontSize: 9, opacity: 0.5 }}>{Math.round((segment.influence ?? 0) * 100)}%</span>
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>
                       {segment.text.length > 36 ? `${segment.text.slice(0, 34)}...` : segment.text}
@@ -751,7 +757,7 @@ export function ComposerPage() {
                         {buildExplanationText(segment, mode)}
                       </p>
                       <div className="mt-2">
-                        <span style={{ ...mono, fontSize: 9, color: frigateMuted }}>Influence: {Math.round(segment.influence * 100)}%</span>
+                        <span style={{ ...mono, fontSize: 9, color: frigateMuted }}>Influence: {Math.round((segment.influence ?? 0) * 100)}%</span>
                       </div>
                     </motion.div>
                   ))

@@ -227,7 +227,7 @@ function Hero() {
                 marginBottom: 60
               }}
             >
-              <span className="font-semibold text-[#F4F4E8]" style={{ opacity: 1 }}>Frigate is an explainable, interactive AI platform</span> for text, image, and multimodal generation that maps prompt segments to outputs and guides the next edit in real time.
+              <span className="font-semibold text-[#F4F4E8]" style={{ opacity: 1 }}>Frigate is an interactive AI platform</span> that maps prompt segments to outputs in real time.
             </p>
           </FadeIn>
 
@@ -592,7 +592,7 @@ function Manifesto() {
               <div>
                 <div style={{ fontFamily: "'Söhne', Inter, sans-serif", fontSize: "clamp(3rem, 6vw, 70px)", color: "#050505", lineHeight: 0.8, marginBottom: 0, fontWeight: 900, transform: "translateY(0.4em)" }}>&ldquo;</div>
                 <p style={{ fontFamily: "Inter, sans-serif", fontSize: "clamp(1.2rem, 2vw, 24px)", lineHeight: "1.4", color: "#050505", letterSpacing: "-0.015em" }}>
-                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Frigate is a creative cockpit for AI: a prompt debugger, an explainability layer, and a co-creator that shows its work.
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Frigate is a prompt debugger and co-creator that shows its work.
                 </p>
                 <div className="flex items-center gap-4 mt-8">
                   <div className="rounded-full bg-[#D1FF00] flex items-center justify-center font-bold text-[10px]" style={{ width: 44, height: 44, color: "#050505" }}>SR</div>
@@ -919,22 +919,22 @@ function Features() {
     {
       step: "STEP 1",
       title: "PROMPT SEGMENTATION",
-      body: "Break text, image references, and modifiers into explainable segments with influence candidates."
+      body: "Break prompts into explainable segments."
     },
     {
       step: "STEP 2",
       title: "GENERATE + TRACE",
-      body: "Run the generation pipeline while collecting token-level and region-level signals from the model stack."
+      body: "Collect signals from the model stack."
     },
     {
       step: "STEP 3",
       title: "MAP THE RESULT",
-      body: "Link each segment to highlighted text spans, visual regions, and style shifts inside the output."
+      body: "Link segments to text spans and visual regions."
     },
     {
       step: "STEP 4",
       title: "GUIDE THE NEXT EDIT",
-      body: "Score confidence, clarity, and drift, then recommend the smallest changes with the biggest effect."
+      body: "Recommend the smallest changes with the biggest effect."
     }
   ];
 
@@ -1024,8 +1024,6 @@ function Features() {
                   color: frigateMuted
                 }}
               >
-                Not a plugin and not an afterthought.
-                <br />
                 Frigate makes the explanation layer part of the product.
               </p>
             </BlurReveal>

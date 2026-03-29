@@ -167,8 +167,7 @@ function ContactHero() {
                   margin: "28px 0 0 0",
                 }}
               >
-                Frigate is for teams that need visibility into how prompts shape results. Reach out when you need
-                better reviewability, cleaner comparisons, or stronger confidence before launch.
+                Frigate is for teams that need visibility into prompt shaping. Reach out for better reviewability and cleaner comparisons.
               </p>
             </FadeIn>
           </div>
@@ -258,7 +257,7 @@ function ContactHero() {
                   >
                     <Mail size={15} style={{ color: palette.lime, marginTop: 2 }} />
                     <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.5, color: "rgba(244,244,232,0.62)" }}>
-                      Best for workflow reviews, platform evaluations, rollout planning, and teams that need better visibility before shipping AI outputs.
+                      Best for workflow reviews and platform evaluations.
                     </p>
                   </div>
 
@@ -268,7 +267,7 @@ function ContactHero() {
                   >
                     <CalendarRange size={15} style={{ color: palette.lime, marginTop: 2 }} />
                     <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.5, color: "rgba(244,244,232,0.62)" }}>
-                      Helpful first context: what you generate, where review confidence drops, and what a stronger workflow should unlock.
+                      Helpful context: what you generate and what a stronger workflow unlocks.
                     </p>
                   </div>
                 </div>
@@ -327,7 +326,7 @@ function QuickRoutes() {
                   maxWidth: 620,
                 }}
               >
-                Most teams come to Frigate for one of three reasons: to evaluate fit, plan implementation, or fix a workflow that has become hard to trust.
+                Teams use Frigate to evaluate fit, plan implementation, or fix untrusted workflows.
               </p>
             </BlurReveal>
           </div>
@@ -480,7 +479,7 @@ function ContactFormSection() {
                   maxWidth: 470,
                 }}
               >
-                The fastest way to get useful help is to describe what your team generates, where review slows down, and what has to become clearer before you can ship with confidence.
+                Briefly describe what your team generates and what a better workflow should unlock.
               </p>
             </BlurReveal>
 
@@ -495,9 +494,9 @@ function ContactFormSection() {
                 <div style={{ ...mono, fontSize: 10, color: palette.lime, marginBottom: 14 }}>[Helpful Context]</div>
                 <div className="space-y-3">
                   {[
-                    "What outputs does the team need to review or approve?",
-                    "Where does confidence drop or rework pile up today?",
-                    "What should feel easier after the workflow improves?",
+                    "Outputs your team reviews.",
+                    "Where confidence drops or rework piles up.",
+                    "What a better workflow unlocks.",
                   ].map((line) => (
                     <div key={line} className="flex items-start gap-3">
                       <div className="mt-[7px] h-[6px] w-[6px] rounded-full" style={{ backgroundColor: palette.lime }} />
@@ -589,7 +588,7 @@ function ContactFormSection() {
                   <textarea
                     value={form.message}
                     onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
-                    placeholder="Tell us what you generate, where the review process breaks down, and what a better workflow should make possible."
+                    placeholder="Details about your workflow and goals..."
                     style={{ ...fieldStyle, minHeight: 180, resize: "vertical" }}
                   />
                 </label>
@@ -614,8 +613,8 @@ function ContactFormSection() {
 
                   <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.5, color: "rgba(244,244,232,0.52)", maxWidth: 320 }}>
                     {submitted
-                      ? "Your mail app should be opening with the draft prefilled."
-                      : "Submitting opens an email draft with your details prefilled."}
+                      ? "Opening mail app..."
+                      : "Opens a prefilled email draft."}
                   </div>
                 </div>
               </form>

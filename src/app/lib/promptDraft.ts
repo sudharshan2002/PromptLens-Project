@@ -1,9 +1,10 @@
 import type { GenerationMode, PromptExplanationSummary, PromptSegment } from "./api";
 
-const STYLE_PATTERN = /\b(cinematic|editorial|premium|minimal|glass|bright|dark|moody|clean|bold|soft|industrial|schematic|luminous)\b/i;
-const COMPOSITION_PATTERN = /\b(hero|dashboard|layout|overlay|ribbon|compare|grid|frame|split|side-by-side|timeline|panel)\b/i;
-const CONSTRAINT_PATTERN = /\b(must|only|without|avoid|limit|keep|restrict|exactly|no)\b/i;
-const OUTPUT_PATTERN = /\b(write|design|generate|create|draft|intro|summary|announcement|hero|headline|copy)\b/i;
+const STYLE_PATTERN = /\b(cinematic|editorial|premium|minimal|glass|bright|dark|moody|clean|bold|soft|industrial|schematic|luminous|vibrant|matte|neon|realistic|abstract|stylized)\b/i;
+const COMPOSITION_PATTERN = /\b(hero|dashboard|layout|overlay|ribbon|compare|grid|frame|split|side-by-side|timeline|panel|center|aligned|spaced|composition|format|macro|wide|close-up)\b/i;
+const CONSTRAINT_PATTERN = /\b(must|only|without|avoid|limit|keep|restrict|exactly|no|prevent|never|ensure|always|mandatory)\b/i;
+const OUTPUT_PATTERN = /\b(write|design|generate|create|draft|intro|summary|announcement|hero|headline|copy|email|script|prompt|code|post|letter|article|blog)\b/i;
+const TONE_PATTERN = /\b(professional|casual|friendly|assertive|technical|persuasive|urgent|funny|engaging|formal|warm|polite|direct)\b/i;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -19,10 +20,11 @@ function classifyClause(clause: string, index: number) {
   const lowered = clause.toLowerCase();
 
   if (index === 0) return { kind: "subject", label: "Subject" };
-  if (STYLE_PATTERN.test(lowered)) return { kind: "style", label: "Style" };
-  if (COMPOSITION_PATTERN.test(lowered)) return { kind: "composition", label: "Composition" };
   if (CONSTRAINT_PATTERN.test(lowered)) return { kind: "constraint", label: "Constraint" };
   if (OUTPUT_PATTERN.test(lowered)) return { kind: "output", label: "Output" };
+  if (TONE_PATTERN.test(lowered)) return { kind: "tone", label: "Tone" };
+  if (STYLE_PATTERN.test(lowered)) return { kind: "style", label: "Style" };
+  if (COMPOSITION_PATTERN.test(lowered)) return { kind: "composition", label: "Composition" };
   return { kind: "detail", label: "Detail" };
 }
 
@@ -32,6 +34,9 @@ function buildEffect(kind: string, mode: GenerationMode) {
   }
   if (kind === "style") {
     return "This segment controls the overall tone, finish, and aesthetic treatment.";
+  }
+  if (kind === "tone") {
+    return "This segment adjusts the emotional resonance and communication style of the text.";
   }
   if (kind === "composition") {
     return "This segment steers layout, framing, or how the output is structured.";
@@ -101,6 +106,7 @@ export function buildDraftFeedback(prompt: string, mode: GenerationMode, segment
   const strongest = segments[0];
   const hasConstraint = segments.some((segment) => segment.kind === "constraint");
   const hasStyle = segments.some((segment) => segment.kind === "style");
+  const hasTone = segments.some((segment) => segment.kind === "tone");
   const feedback = [];
 
   if (strongest) {
@@ -111,6 +117,9 @@ export function buildDraftFeedback(prompt: string, mode: GenerationMode, segment
   }
   if (mode === "image" && !hasStyle) {
     feedback.push("Add a style cue if you want clearer control over the visual treatment.");
+  }
+  if (mode === "text" && !hasTone) {
+    feedback.push("Add a tone keyword (like professional or casual) to better control the voice.");
   }
   if (mode === "text" && segments.length < 3) {
     feedback.push("Add one more clause to separate the subject, tone, and intended outcome.");

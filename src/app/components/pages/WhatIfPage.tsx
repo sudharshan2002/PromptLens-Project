@@ -20,12 +20,12 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 const defaultPrompts: Record<GenerationMode, { original: string; modified: string }> = {
   image: {
-    original: "Premium Frigate hero, calm cinematic interface, visible prompt-to-output mapping, restrained cockpit framing",
-    modified: "Premium Frigate hero, brighter editorial interface, visible prompt-to-output mapping, before/after diff ribbon",
+    original: "A cozy living room with a fireplace, comfortable sofa, and warm lighting.",
+    modified: "A modern, minimalist living room with a marble fireplace, sleek white sofa, deep shadows, and cinematic late afternoon sunlight.",
   },
   text: {
-    original: "Frigate gives AI teams clearer explainability, tighter review control, and a safer path to deployment.",
-    modified: "Frigate gives AI teams clearer explainability, tighter review control, faster launch confidence, and visible what-if comparison.",
+    original: "Send an email to the team asking them to review the latest design files before Friday.",
+    modified: "Write a clear, professional email to the product team requesting a final review of the dashboard design files by Friday at noon. It must be polite but convey urgency.",
   },
 };
 
@@ -33,12 +33,12 @@ const segmentColors = ["#D1FF00", "#7DFFAF", "#FF7D7D", "#7DB5FF", "#FFB87D"];
 
 const comparisonPlaceholders: Record<GenerationMode, { original: string; modified: string }> = {
   image: {
-    original: "Calm Frigate control room, cinematic depth, measured lime glow, readable mapping arcs",
-    modified: "Editorial Frigate frame, brighter surfaces, diff ribbon, visible mapping signal",
+    original: "Describe the baseline image...",
+    modified: "Describe the modified image...",
   },
   text: {
-    original: "Frigate helps review teams understand prompt intent and keep generations controlled.",
-    modified: "Frigate helps review teams understand prompt intent, compare edits, and ship with more confidence.",
+    original: "Draft the baseline text...",
+    modified: "Draft the text revision...",
   },
 };
 
@@ -343,7 +343,7 @@ export function WhatIfPage() {
                     <div>
                       <div style={{ ...mono, fontSize: 10, color: "#686868", marginBottom: 6 }}>Live Segmentation</div>
                       <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: "160%", color: "#686868", margin: 0 }}>
-                        Real-time segment preview.
+                        Live preview.
                       </p>
                     </div>
                     <span style={{ ...mono, fontSize: 10, color: scenario.draftDirty ? "#1A3D1A" : "#686868" }}>
@@ -559,19 +559,19 @@ export function WhatIfPage() {
               {
                 title: "Highest Leverage",
                 text: result
-                  ? `${Math.abs(Math.round(result.delta.clarity)) >= Math.abs(Math.round(result.delta.quality)) ? "Clarity" : "Quality"} moved the most between these variants.`
+                  ? `${Math.abs(Math.round(result.delta.clarity)) >= Math.abs(Math.round(result.delta.quality)) ? "Clarity" : "Quality"} had the largest delta.`
                   : "Awaiting comparison.",
               },
               {
                 title: "Recommended Edit",
                 text: result?.delta.clarity && result.delta.clarity >= 0
-                  ? "Keep the modified variant if you want the clearer prompt path."
+                  ? "Use modified variant."
                   : "Awaiting comparison.",
               },
               {
                 title: "Predictability Score",
                 text: result
-                  ? `${Math.max(55, 100 - Math.abs(Math.round(result.delta.quality)) * 3)}% stable - changes remain understandable and contained.`
+                  ? `${Math.max(55, 100 - Math.abs(Math.round(result.delta.quality)) * 3)}% stable changes.`
                   : "Pending comparison.",
               },
             ].map((item, index) => (

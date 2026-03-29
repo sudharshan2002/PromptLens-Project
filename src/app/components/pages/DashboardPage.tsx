@@ -152,7 +152,7 @@ export function DashboardPage() {
         )}
 
         {loading ? (
-          <div style={{ ...mono, fontSize: 10, color: "#686868" }}>Loading dashboard...</div>
+          <div style={{ ...mono, fontSize: 10, color: "#686868" }}>Loading...</div>
         ) : error ? (
           <div className="p-5" style={{ border: "1px solid #FF7D7D20", backgroundColor: "#FF7D7D08" }}>
             <div style={{ ...mono, fontSize: 10, color: "#FF7D7D", marginBottom: 10 }}>Dashboard Error</div>
@@ -251,7 +251,7 @@ export function DashboardPage() {
                   </div>
                 </motion.div>
               )) : (
-                <span style={{ ...mono, fontSize: 10, color: "#686868" }}>No runs stored yet.</span>
+                <span style={{ ...mono, fontSize: 10, color: "#686868" }}>No runs.</span>
               )}
             </motion.div>
           </>
@@ -289,7 +289,7 @@ export function DashboardPage() {
                   </div>
                 </motion.div>
               )) : (
-                <span style={{ ...mono, fontSize: 10, color: "#686868" }}>No session history yet.</span>
+                <span style={{ ...mono, fontSize: 10, color: "#686868" }}>No history.</span>
               )}
             </div>
             <div className="mt-8 p-5 text-center" style={{ border: "1px dashed #9C9C9C15" }}>

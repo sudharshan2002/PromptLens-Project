@@ -3,7 +3,7 @@ import { motion, useScroll, useTransform, useMotionTemplate, useSpring, AnimateP
 import { useNavigate } from "react-router";
 import { AnimatedHeadline, FadeIn } from "../AnimatedText";
 import { GrainLocal } from "../GrainOverlay";
-import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { ImageWithFallback } from "../common/ImageWithFallback";
 import {
   Sparkles, Eye, Layers, BarChart3, ArrowRight, Zap,
   Shield, GitCompare, Play, Bot, AlertTriangle, Activity, Wrench, Headphones, X

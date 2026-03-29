@@ -20,12 +20,15 @@ from config import Settings
 
 logger = logging.getLogger(__name__)
 
-try:  # pragma: no cover - import behavior depends on local environment
+try:  # pragma: no cover
     from app.services.nlp_analyzer import NLPAnalyzer
-    from huggingface_hub import InferenceClient
-except Exception:  # pragma: no cover - defensive optional dependency
-    InferenceClient = None  # type: ignore[assignment]
+except Exception:  # pragma: no cover
     NLPAnalyzer = None  # type: ignore[assignment]
+
+try:  # pragma: no cover
+    from huggingface_hub import InferenceClient
+except Exception:  # pragma: no cover
+    InferenceClient = None  # type: ignore[assignment]
 
 
 @dataclass(frozen=True)

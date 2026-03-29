@@ -407,11 +407,11 @@ export function Services() {
         {/* === ROW 2: TIMELINE === */}
         {/* Col 1 Empty */}
         <div className="col-span-1" style={{ borderRight: "1px solid #9C9C9C26" }}></div>
-        
+
         {/* Col 2-5 Timeline */}
         <div className="col-span-4 relative h-0 z-10">
           <div className="absolute top-0 left-0 w-full h-[1px]" style={{ backgroundColor: "#9C9C9C26" }}></div>
-          
+
           {/* Timeline Ticks (hanging down) */}
           {Array.from({ length: 33 }).map((_, idx) => (
             <div
@@ -431,7 +431,7 @@ export function Services() {
         {/* === ROW 3: PANELS === */}
         {/* Col 1 Empty */}
         <div className="col-span-1" style={{ borderRight: "1px solid #9C9C9C26" }}></div>
-        
+
         {/* Panels */}
         {panels.map((panel, idx) => {
           const isActive = active === idx;
@@ -462,7 +462,7 @@ export function Services() {
                   <span style={{ color: isActive ? "#D1FF00" : "#9C9C9C", fontSize: "12px", lineHeight: 1 }}>●</span>
                   {panel.label}
                 </div>
-                
+
                 {/* Bottom Content (Title & Desc) */}
                 <div className="mt-auto">
                   <div

@@ -1,7 +1,7 @@
 import requests
 import json
 
-url = "http://127.0.0.1:8000/api/generate"
+url = "https://frigate-backend.onrender.com/api/generate"
 payload = {
     "prompt": "A futuristic Frigate workspace with glassmorphism and neon lime accents",
     "mode": "image"

@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { RouterProvider } from "react-router";
 import { LoadingScreen } from "./components/LoadingScreen";
-import { router } from "./routes";
+import { router } from "./routes.tsx";
 
 export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 2400ms gives enough time for staggered entry to finish and rest before exiting
-    const timer = setTimeout(() => setLoading(false), 2400);
+    const prefersReducedMotion =
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = setTimeout(() => setLoading(false), prefersReducedMotion ? 180 : 900);
     return () => clearTimeout(timer);
   }, []);
 

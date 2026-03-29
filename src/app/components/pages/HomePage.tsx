@@ -513,7 +513,7 @@ function ManifestoHeadline() {
       ref={container}
       className="flex flex-col relative w-full"
       style={{
-        fontFamily: "'SÃ¶hne', Inter, sans-serif",
+        fontFamily: "'TASA Orbiter', Inter, sans-serif",
         fontWeight: 900,
         fontSize: "clamp(1.35rem, 3.05vw, 52px)",
         lineHeight: "1.05",

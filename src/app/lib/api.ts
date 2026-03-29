@@ -1,6 +1,7 @@
 const API_ROOT = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 const API_PREFIX = `${API_ROOT}/api`;
 const tokenPattern = /\b[\w'-]+\b/g;
+const demoModeFlag = String(import.meta.env.VITE_DEMO_MODE || "").trim().toLowerCase();
 
 type ApiFallbackMeta = {
   isFallback?: boolean;
@@ -73,6 +74,11 @@ export type GenerateResponse = ApiFallbackMeta & {
   session: SessionRecord;
 };
 
+export type AnalyzeResponse = ApiFallbackMeta & {
+  segments: PromptSegment[];
+  explanation_summary: PromptExplanationSummary;
+};
+
 export type WhatIfResponse = ApiFallbackMeta & {
   difference: string;
   original_session: SessionRecord;
@@ -134,6 +140,22 @@ export type SessionListResponse = ApiFallbackMeta & {
 
 let fallbackSessionId = 9000;
 let fallbackSessions: SessionRecord[] | null = null;
+
+function isDemoModeEnabled() {
+  if (["1", "true", "yes", "on"].includes(demoModeFlag)) {
+    return true;
+  }
+
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return new URLSearchParams(window.location.search).get("demo") === "1";
+}
+
+function demoModeMessage() {
+  return "Demo mode is enabled, so Frigate is showing seeded preview data.";
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_PREFIX}${path}`, {
@@ -526,6 +548,9 @@ function registerFallbackSession(session: SessionRecord) {
 }
 
 function fallbackMessageFrom(error: unknown) {
+  if (isDemoModeEnabled()) {
+    return demoModeMessage();
+  }
   const reason = error instanceof Error ? error.message : "Unable to reach the backend.";
   return `Live services are unavailable, so Frigate is showing preview data. ${reason}`;
 }
@@ -700,6 +725,10 @@ function buildDashboardFallback(fallbackMessage: string): DashboardMetricsRespon
 
 export const api = {
   async generate(payload: { prompt: string; mode: GenerationMode; source?: GenerationSource; reference_image?: ReferenceImageInput | null }) {
+    if (isDemoModeEnabled()) {
+      return buildGenerateFallback(payload, demoModeMessage());
+    }
+
     try {
       return await request<GenerateResponse>("/generate", {
         method: "POST",
@@ -708,6 +737,9 @@ export const api = {
           mode: payload.mode,
           source: payload.source || "composer",
           reference_image: payload.reference_image || null,
+          include_multimodal: false,
+          include_what_if: false,
+          include_heatmap: false,
         }),
       });
     } catch (error) {
@@ -721,6 +753,10 @@ export const api = {
     original_reference_image?: ReferenceImageInput | null;
     modified_reference_image?: ReferenceImageInput | null;
   }) {
+    if (isDemoModeEnabled()) {
+      return buildCompareFallback(payload, demoModeMessage());
+    }
+
     try {
       return await request<WhatIfResponse>("/what-if", {
         method: "POST",
@@ -735,6 +771,10 @@ export const api = {
     }
   },
   async dashboard() {
+    if (isDemoModeEnabled()) {
+      return buildDashboardFallback(demoModeMessage());
+    }
+
     try {
       return await request<DashboardMetricsResponse>("/dashboard");
     } catch (error) {
@@ -742,13 +782,47 @@ export const api = {
     }
   },
   async sessions(limit = 12) {
+    if (isDemoModeEnabled()) {
+      return buildSessionsFallback(limit, demoModeMessage());
+    }
+
     try {
       return await request<SessionListResponse>(`/sessions?limit=${limit}`);
     } catch (error) {
       return buildSessionsFallback(limit, fallbackMessageFrom(error));
     }
   },
+  async analyze(payload: { prompt: string; mode: GenerationMode }) {
+    if (isDemoModeEnabled()) {
+      const segments = buildSegments(payload.prompt, payload.mode);
+      return {
+        segments,
+        explanation_summary: buildExplanationSummary(payload.prompt, payload.mode),
+        isFallback: true,
+        fallbackMessage: demoModeMessage(),
+      };
+    }
+
+    try {
+      return await request<AnalyzeResponse>("/analyze", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      const segments = buildSegments(payload.prompt, payload.mode);
+      return {
+        segments,
+        explanation_summary: buildExplanationSummary(payload.prompt, payload.mode),
+        isFallback: true,
+        fallbackMessage: fallbackMessageFrom(error),
+      };
+    }
+  },
 };
+
+export function isDemoModeActive() {
+  return isDemoModeEnabled();
+}
 
 export function formatRelativeTime(value: string): string {
   const createdAt = new Date(value);

@@ -6,7 +6,7 @@ import sqlite3
 from pathlib import Path
 from threading import Lock
 
-from app.models.schemas import MetricCreateRequest, MetricSummaryResponse
+from app.schemas import MetricCreateRequest, MetricSummaryResponse
 
 
 class MetricsService:
@@ -23,7 +23,7 @@ class MetricsService:
         return connection
 
     def init_storage(self) -> None:
-        """Create the metrics table when it does not already exist."""
+        """Create the metrics table and migrate new explainability columns when needed."""
         with self._lock, self._connect() as connection:
             connection.execute(
                 """
@@ -35,11 +35,29 @@ class MetricsService:
                     endpoint TEXT,
                     mode TEXT,
                     trust_score REAL,
+                    confidence_score REAL,
+                    complexity_score REAL,
+                    impact_score REAL,
+                    provider TEXT,
+                    request_id TEXT,
                     feedback TEXT,
                     created_at TEXT NOT NULL
                 )
                 """
             )
+            existing_columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(metrics)").fetchall()
+            }
+            for column_name, column_type in {
+                "confidence_score": "REAL",
+                "complexity_score": "REAL",
+                "impact_score": "REAL",
+                "provider": "TEXT",
+                "request_id": "TEXT",
+            }.items():
+                if column_name not in existing_columns:
+                    connection.execute(f"ALTER TABLE metrics ADD COLUMN {column_name} {column_type}")
             connection.commit()
 
     def store_metric(self, payload: MetricCreateRequest) -> int:
@@ -54,10 +72,15 @@ class MetricsService:
                     endpoint,
                     mode,
                     trust_score,
+                    confidence_score,
+                    complexity_score,
+                    impact_score,
+                    provider,
+                    request_id,
                     feedback,
                     created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     payload.prompt_length,
@@ -66,6 +89,11 @@ class MetricsService:
                     payload.endpoint,
                     payload.mode,
                     payload.trust_score,
+                    payload.confidence_score,
+                    payload.complexity_score,
+                    payload.impact_score,
+                    payload.provider,
+                    payload.request_id,
                     payload.feedback,
                     payload.created_at,
                 ),
@@ -81,7 +109,10 @@ class MetricsService:
                 SELECT
                     COUNT(*) AS total_requests,
                     AVG(response_time_ms) AS avg_response_time,
-                    AVG(rating) AS avg_rating
+                    AVG(rating) AS avg_rating,
+                    AVG(confidence_score) AS avg_confidence_score,
+                    AVG(complexity_score) AS avg_complexity_score,
+                    AVG(impact_score) AS avg_impact_score
                 FROM metrics
                 """
             ).fetchone()
@@ -94,4 +125,7 @@ class MetricsService:
             total_requests=total_requests,
             avg_response_time=avg_response_time,
             avg_rating=round(float(avg_rating), 2) if avg_rating is not None else None,
+            avg_confidence_score=round(float(row["avg_confidence_score"]), 2) if row["avg_confidence_score"] is not None else None,
+            avg_complexity_score=round(float(row["avg_complexity_score"]), 2) if row["avg_complexity_score"] is not None else None,
+            avg_impact_score=round(float(row["avg_impact_score"]), 2) if row["avg_impact_score"] is not None else None,
         )

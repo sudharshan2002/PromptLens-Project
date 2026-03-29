@@ -61,7 +61,7 @@ def get_settings() -> Settings:
     db_path = os.getenv("SQLITE_DB_PATH", str(_default_sqlite_path()))
 
     return Settings(
-        app_name=os.getenv("APP_NAME", "PromptLens Backend"),
+        app_name=os.getenv("APP_NAME", "Frigate Backend"),
         api_prefix=os.getenv("API_PREFIX", "/api"),
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", "8000")),

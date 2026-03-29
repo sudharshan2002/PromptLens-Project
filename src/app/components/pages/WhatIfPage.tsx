@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { GrainLocal } from "../GrainOverlay";
 import { ImageGenerationHeatmap } from "../ImageGenerationHeatmap";
 import { AppPageLinks } from "./AppPageLinks";
-import { GitCompare, ArrowRight, Zap, ChevronDown, BarChart3, RefreshCw, Image as ImageIcon, Type, Upload, X } from "lucide-react";
-import { api, type GenerationMode, type ReferenceImageInput, type WhatIfResponse } from "../../lib/api";
+import { GitCompare, ArrowRight, ChevronDown, BarChart3, RefreshCw, Image as ImageIcon, Type } from "lucide-react";
+import { api, type GenerationMode, type WhatIfResponse } from "../../lib/api";
+import { buildDraftExplanationSummary, buildDraftSegments } from "../../lib/promptDraft";
 
 const mono: React.CSSProperties = {
   fontFamily: "'Roboto Mono', monospace",
@@ -50,28 +53,7 @@ type WhatIfSeedState = {
   prompt?: string;
   mode?: GenerationMode;
   fromComposer?: boolean;
-  referenceImage?: ReferenceImageInput | null;
 };
-
-function readReferenceImage(file: File): Promise<ReferenceImageInput> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      if (!result) {
-        reject(new Error("Unable to read the selected image."));
-        return;
-      }
-      resolve({
-        data_url: result,
-        mime_type: file.type || "image/png",
-        name: file.name,
-      });
-    };
-    reader.onerror = () => reject(new Error("Unable to read the selected image."));
-    reader.readAsDataURL(file);
-  });
-}
 
 function MetricCard({ label, valueA, valueB }: { label: string; valueA: number; valueB: number }) {
   const delta = valueB - valueA;
@@ -102,11 +84,9 @@ function MetricCard({ label, valueA, valueB }: { label: string; valueA: number; 
 export function WhatIfPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<GenerationMode>("image");
-  const [originalPrompt, setOriginalPrompt] = useState(defaultPrompts.image.original);
-  const [modifiedPrompt, setModifiedPrompt] = useState(defaultPrompts.image.modified);
-  const [originalReferenceImage, setOriginalReferenceImage] = useState<ReferenceImageInput | null>(null);
-  const [modifiedReferenceImage, setModifiedReferenceImage] = useState<ReferenceImageInput | null>(null);
+  const [mode, setMode] = useState<"text" | "image">("text");
+  const [originalPrompt, setOriginalPrompt] = useState(defaultPrompts.text.original);
+  const [modifiedPrompt, setModifiedPrompt] = useState(defaultPrompts.text.modified);
   const [result, setResult] = useState<WhatIfResponse | null>(null);
   const [expandedSens, setExpandedSens] = useState<number | null>(0);
   const [isComparing, setIsComparing] = useState(false);
@@ -117,10 +97,8 @@ export function WhatIfPage() {
     nextOriginal = originalPrompt,
     nextModified = modifiedPrompt,
     nextMode = mode,
-    nextOriginalReferenceImage = originalReferenceImage,
-    nextModifiedReferenceImage = modifiedReferenceImage,
   ) {
-    if ((!nextOriginal.trim() && !nextOriginalReferenceImage) || (!nextModified.trim() && !nextModifiedReferenceImage)) return;
+    if (!nextOriginal.trim() || !nextModified.trim()) return;
 
     setIsComparing(true);
     setError(null);
@@ -130,8 +108,6 @@ export function WhatIfPage() {
         original_prompt: nextOriginal,
         modified_prompt: nextModified,
         mode: nextMode,
-        original_reference_image: nextOriginalReferenceImage,
-        modified_reference_image: nextModifiedReferenceImage,
       });
       setResult(response);
       setBackendNotice(response.isFallback ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data." : null);
@@ -143,10 +119,6 @@ export function WhatIfPage() {
   }
 
   useEffect(() => {
-    void runComparison(defaultPrompts.image.original, defaultPrompts.image.modified, "image", null, null);
-  }, []);
-
-  useEffect(() => {
     const seed = location.state as WhatIfSeedState | null;
 
     if (!seed?.fromComposer || !seed.prompt || !seed.mode) {
@@ -156,11 +128,9 @@ export function WhatIfPage() {
     setMode(seed.mode);
     setOriginalPrompt(seed.prompt);
     setModifiedPrompt(seed.prompt);
-    setOriginalReferenceImage(seed.referenceImage || null);
-    setModifiedReferenceImage(seed.referenceImage || null);
     setResult(null);
     setError(null);
-    void runComparison(seed.prompt, seed.prompt, seed.mode, seed.referenceImage || null, seed.referenceImage || null);
+    void runComparison(seed.prompt, seed.prompt, seed.mode);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -169,11 +139,8 @@ export function WhatIfPage() {
     setMode(nextMode);
     setOriginalPrompt(nextPrompts.original);
     setModifiedPrompt(nextPrompts.modified);
-    setOriginalReferenceImage(null);
-    setModifiedReferenceImage(null);
     setResult(null);
     setError(null);
-    void runComparison(nextPrompts.original, nextPrompts.modified, nextMode, null, null);
   }
 
   const sensitivityData = useMemo(() => {
@@ -211,23 +178,30 @@ export function WhatIfPage() {
     ];
   }, [result]);
 
-  async function handleReferenceImageChange(which: "original" | "modified", event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const originalDraftSegments = useMemo(() => {
+    return buildDraftSegments(originalPrompt, mode).map((segment, index) => ({
+      ...segment,
+      influence: segment.impact,
+      color: segmentColors[index % segmentColors.length],
+    }));
+  }, [mode, originalPrompt]);
 
-    try {
-      const nextReferenceImage = await readReferenceImage(file);
-      if (which === "original") {
-        setOriginalReferenceImage(nextReferenceImage);
-      } else {
-        setModifiedReferenceImage(nextReferenceImage);
-      }
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Unable to load the selected image.");
-    } finally {
-      event.target.value = "";
-    }
-  }
+  const modifiedDraftSegments = useMemo(() => {
+    return buildDraftSegments(modifiedPrompt, mode).map((segment, index) => ({
+      ...segment,
+      influence: segment.impact,
+      color: segmentColors[index % segmentColors.length],
+    }));
+  }, [mode, modifiedPrompt]);
+
+  const isOriginalDirty =
+    !result ||
+    result.original_session.mode !== mode ||
+    result.original_session.prompt.trim() !== originalPrompt.trim();
+  const isModifiedDirty =
+    !result ||
+    result.modified_session.mode !== mode ||
+    result.modified_session.prompt.trim() !== modifiedPrompt.trim();
 
   return (
     <div className="relative min-h-screen" style={{ backgroundColor: "#F5F4E7", paddingTop: 64 }}>
@@ -273,7 +247,7 @@ export function WhatIfPage() {
               className="cursor-pointer border-none flex items-center gap-2"
               style={{ ...mono, fontSize: 10, color: "#050505", backgroundColor: "#D1FF00", padding: "9px 12px" }}
               onClick={() => void runComparison()}
-              disabled={isComparing}
+              disabled={isComparing || !originalPrompt.trim() || !modifiedPrompt.trim()}
             >
               <RefreshCw size={9} className={isComparing ? "animate-spin" : undefined} />
               Compare New Edit
@@ -307,9 +281,17 @@ export function WhatIfPage() {
             prompt: originalPrompt,
             setter: setOriginalPrompt,
             session: result?.original_session,
-            referenceImage: originalReferenceImage,
-            setReferenceImage: setOriginalReferenceImage,
-            explanation: result?.original_explanation_summary,
+            draftDirty: isOriginalDirty,
+            segments: isOriginalDirty
+              ? originalDraftSegments
+              : ((result?.original_segments || []).map((segment, index) => ({
+                  ...segment,
+                  influence: segment.impact,
+                  color: segmentColors[index % segmentColors.length],
+                }))),
+            explanation: isOriginalDirty
+              ? buildDraftExplanationSummary(originalPrompt, mode)
+              : result?.original_explanation_summary,
           },
           {
             id: "B",
@@ -317,10 +299,18 @@ export function WhatIfPage() {
             prompt: modifiedPrompt,
             setter: setModifiedPrompt,
             session: result?.modified_session,
-            referenceImage: modifiedReferenceImage,
-            setReferenceImage: setModifiedReferenceImage,
-              explanation: result?.modified_explanation_summary,
-            },
+            draftDirty: isModifiedDirty,
+            segments: isModifiedDirty
+              ? modifiedDraftSegments
+              : ((result?.modified_segments || []).map((segment, index) => ({
+                  ...segment,
+                  influence: segment.impact,
+                  color: segmentColors[index % segmentColors.length],
+                }))),
+            explanation: isModifiedDirty
+              ? buildDraftExplanationSummary(modifiedPrompt, mode)
+              : result?.modified_explanation_summary,
+          },
           ].map((scenario, index) => (
             <motion.div
               key={scenario.id}
@@ -351,50 +341,36 @@ export function WhatIfPage() {
                 <div className="mt-3 rounded-none p-3" style={{ border: "1px solid #00000010", backgroundColor: "#F7F6EC" }}>
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div style={{ ...mono, fontSize: 10, color: "#686868", marginBottom: 6 }}>Source Inputs</div>
+                      <div style={{ ...mono, fontSize: 10, color: "#686868", marginBottom: 6 }}>Live Segmentation</div>
                       <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: "160%", color: "#686868", margin: 0 }}>
-                        Each scenario can blend written intent with a reference image, so the visual delta stays explainable instead of guesswork.
+                        Each scenario is segmented while you type, so the edit delta is visible before you run the next compare.
                       </p>
                     </div>
-                    <label
-                      className="cursor-pointer"
-                      style={{ ...mono, fontSize: 10, color: "#050505", backgroundColor: index === 1 ? "#D1FF00" : "#F2F1E8", padding: "8px 10px" }}
-                    >
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(event) => void handleReferenceImageChange(scenario.id === "A" ? "original" : "modified", event)}
-                      />
-                      <span className="flex items-center gap-2">
-                        <Upload size={11} />
-                        {scenario.referenceImage ? "Replace Image" : "Attach Image"}
-                      </span>
-                    </label>
+                    <span style={{ ...mono, fontSize: 10, color: scenario.draftDirty ? "#1A3D1A" : "#686868" }}>
+                      {scenario.draftDirty ? "Draft View" : "Last Compare"}
+                    </span>
                   </div>
 
-                  {scenario.referenceImage ? (
-                    <div className="flex flex-wrap items-center gap-3">
-                      {scenario.referenceImage.data_url ? (
-                        <img src={scenario.referenceImage.data_url} alt={scenario.referenceImage.name || scenario.label} style={{ width: 92, height: 72, objectFit: "cover", border: "1px solid #00000010" }} />
-                      ) : null}
-                      <div style={{ flex: 1, minWidth: 160 }}>
-                        <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 6 }}>Reference Active</div>
-                        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: "160%", color: "#686868", margin: 0 }}>
-                          {scenario.referenceImage.name || "Uploaded image"} is acting as the visual anchor for this scenario's composition and style.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="cursor-pointer border-none flex items-center gap-2"
-                        style={{ ...mono, fontSize: 10, color: "#686868", backgroundColor: "#F2F1E8", padding: "8px 10px" }}
-                        onClick={() => scenario.setReferenceImage(null)}
-                      >
-                        <X size={11} />
-                        Clear
-                      </button>
+                  {scenario.segments.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {scenario.segments.map((segment, segmentIndex) => (
+                        <span
+                          key={`${scenario.id}-${segment.id}-${segmentIndex}`}
+                          style={{
+                            ...mono,
+                            fontSize: 9,
+                            color: "#050505",
+                            backgroundColor: segment.color,
+                            padding: "6px 9px",
+                          }}
+                        >
+                          {segment.label} {Math.round(segment.influence * 100)}%
+                        </span>
+                      ))}
                     </div>
-                  ) : null}
+                  ) : (
+                    <span style={{ ...mono, fontSize: 10, color: "#686868" }}>Type this scenario to populate the live prompt map.</span>
+                  )}
                 </div>
               </div>
 
@@ -425,11 +401,6 @@ export function WhatIfPage() {
                     <div className="absolute bottom-3 right-3">
                       <span style={{ ...mono, fontSize: 9, color: "#FFFFED", backgroundColor: "#050505cc", padding: "4px 8px" }}>{scenario.session?.provider || "preview-image"}</span>
                     </div>
-                    {scenario.referenceImage?.name ? (
-                      <div className="absolute bottom-3 left-3">
-                        <span style={{ ...mono, fontSize: 9, color: "#1A3D1A", backgroundColor: "#D1FF00", padding: "4px 8px" }}>Ref | {scenario.referenceImage.name}</span>
-                      </div>
-                    ) : null}
                   </>
                 ) : (
                   <div className="absolute inset-0 overflow-auto p-5">
@@ -441,7 +412,12 @@ export function WhatIfPage() {
 
               {scenario.explanation ? (
                 <div className="p-3.5" style={{ borderTop: "1px solid #9C9C9C08" }}>
-                  <div style={{ ...mono, fontSize: 10, color: "#686868", marginBottom: 8 }}>How This Scenario Is Read</div>
+                  <div style={{ ...mono, fontSize: 10, color: "#686868", marginBottom: 8 }}>
+                    {scenario.draftDirty ? "How This Draft Is Read" : "How This Scenario Is Read"}
+                  </div>
+                  {scenario.session && scenario.draftDirty ? (
+                    <div style={{ ...mono, fontSize: 9, color: "#1A3D1A", marginBottom: 8 }}>Draft changed. Compare again to refresh this scenario.</div>
+                  ) : null}
                   <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: "165%", color: "#686868", marginBottom: 8 }}>
                     {scenario.explanation.overview}
                   </p>
@@ -476,9 +452,18 @@ export function WhatIfPage() {
                 <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#686868" }}>{change.delta}</span>
               </div>
             ))}
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, lineHeight: "170%", color: "#686868", marginTop: 10 }}>
-              {result?.difference || "The next compare will show which edits shifted confidence, clarity, and visual direction."}
-            </p>
+            <div className="prose-frigate" style={{ marginTop: 24 }}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h3: ({node, ...props}) => <h3 style={{ color: "#050505", marginTop: 20, marginBottom: 12, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "IBM Plex Mono, monospace" }} {...props} />,
+                  p: ({node, ...props}) => <p style={{ color: "#686868", fontSize: 15, lineHeight: "1.8", marginBottom: 16 }} {...props} />,
+                  li: ({node, ...props}) => <li style={{ color: "#686868", fontSize: 14, lineHeight: "1.7", marginBottom: 8 }} {...props} />
+                }}
+              >
+                {result?.difference || "The next compare will show which edits shifted confidence, clarity, and visual direction."}
+              </ReactMarkdown>
+            </div>
           </div>
 
           {result?.segment_changes?.length ? (

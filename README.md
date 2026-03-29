@@ -5,13 +5,34 @@ Run `npm i` to install the frontend dependencies.
 
 Run `npm run dev` to start the Vite site.
 
-The frontend now expects the FastAPI backend at `http://127.0.0.1:8000` via `.env.local`.
+Set `VITE_DEMO_MODE=true` in `.env.local` if you want the frontend to use seeded demo data without calling the backend.
 
-Backend setup:
+The frontend expects the FastAPI backend at `http://127.0.0.1:8000` unless `VITE_API_URL` is set in `.env.local`.
 
-1. Create a Python environment and install `backend/requirements.txt`.
-2. Copy `backend/.env.example` if you want a fresh local config.
-3. Run `python backend/run.py` from the project root once FastAPI dependencies are installed.
+## Running the backend locally
+
+1. Create a Python virtual environment.
+2. Install the backend requirements with `pip install -r backend/requirements.txt`.
+3. Optional: copy `backend/.env.example` to `backend/.env` and fill in any API keys you want to use.
+4. Start the backend from the project root with `npm run backend`.
+
+You can also run it directly with:
+
+`python backend/run.py`
+
+The API will start on `http://127.0.0.1:8000` by default and exposes:
+
+- `GET /health`
+- `POST /api/generate`
+- `POST /api/what-if`
+- `GET /api/dashboard`
+- `GET /api/sessions`
+
+If `npm run backend` does not work, check these common issues:
+
+1. Python is not installed or not available on your `PATH`.
+2. Your virtual environment was created with a Python path that no longer exists.
+3. The backend dependencies were not installed into the active environment.
 
 ## Deploying the backend to Render
 
@@ -29,7 +50,7 @@ Render service settings:
 Environment variables to set in Render:
 
 - `CORS_ORIGINS`: your frontend origin, for example `https://your-frontend-domain.com`
-- `GROQ_API_KEY`: required for live Groq text generation and prompt analysis
+- `GROQ_API_KEY`: required for live Groq text generation
 - `HF_TOKEN`: required for live Hugging Face image and vision generation
 
 Persistence notes:

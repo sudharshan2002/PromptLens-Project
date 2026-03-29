@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Lock
 
-from app.models.schemas import (
+from app.schemas import (
     DashboardMetricsResponse,
     RecentRun,
     SessionCreate,
@@ -134,7 +134,7 @@ class SessionService:
         )
 
     def get_dashboard_metrics(self) -> DashboardMetricsResponse:
-        """Build aggregated dashboard metrics from stored sessions."""
+        """Build aggregated dashboard metrics from stored sessions and metrics logs."""
         with self._lock, self._connect() as connection:
             rows = connection.execute(
                 """
@@ -149,6 +149,14 @@ class SessionService:
                     COUNT(*) AS total_runs,
                     COALESCE(SUM(LENGTH(prompt) + LENGTH(output)), 0) AS storage_bytes
                 FROM sessions
+                """
+            ).fetchone()
+            metric_summary = connection.execute(
+                """
+                SELECT
+                    AVG(impact_score) AS avg_impact_score,
+                    AVG(complexity_score) AS avg_prompt_complexity
+                FROM metrics
                 """
             ).fetchone()
 
@@ -167,11 +175,13 @@ class SessionService:
                 usage_today=[UsagePoint(hour=f"{hour:02d}:00", runs=0) for hour in range(0, 24, 3)],
                 recent_runs=[],
                 system_status=[
-                    SystemStatusItem(label="Text Provider", value="Replicate", status="Configured"),
-                    SystemStatusItem(label="Image Provider", value="Pollinations", status="Ready"),
+                    SystemStatusItem(label="Text Provider", value="Groq / Mock", status="Ready"),
+                    SystemStatusItem(label="Image Provider", value="Hugging Face / Mock", status="Ready"),
                     SystemStatusItem(label="Storage Used", value="0 KB", status="Fresh"),
                 ],
                 storage_bytes=0,
+                avg_impact_score=0.0,
+                avg_prompt_complexity=0.0,
             )
 
         avg_confidence = round(sum(session.trust_score for session in sessions) / len(sessions), 2)
@@ -227,9 +237,11 @@ class SessionService:
         ]
 
         storage_bytes = int(totals["storage_bytes"] or 0)
+        avg_impact_score = round(float(metric_summary["avg_impact_score"] or 0.0), 2)
+        avg_prompt_complexity = round(float(metric_summary["avg_prompt_complexity"] or 0.0), 2)
         system_status = [
-            SystemStatusItem(label="Text Provider", value="Replicate", status="Connected"),
-            SystemStatusItem(label="Image Provider", value="Pollinations", status="Connected"),
+            SystemStatusItem(label="Text Provider", value="Groq / Mock", status="Connected"),
+            SystemStatusItem(label="Image Provider", value="Hugging Face / Mock", status="Connected"),
             SystemStatusItem(label="Storage Used", value=self._format_storage(storage_bytes), status="Local SQLite"),
             SystemStatusItem(label="Latest Mode", value=sessions[0].mode.upper(), status=sessions[0].provider),
         ]
@@ -245,6 +257,8 @@ class SessionService:
             recent_runs=recent_runs,
             system_status=system_status,
             storage_bytes=storage_bytes,
+            avg_impact_score=avg_impact_score,
+            avg_prompt_complexity=avg_prompt_complexity,
         )
 
     @staticmethod

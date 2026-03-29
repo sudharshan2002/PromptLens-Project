@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { GrainLocal } from "../GrainOverlay";
 import { ImageGenerationHeatmap } from "../ImageGenerationHeatmap";
 import { AppPageLinks } from "./AppPageLinks";
@@ -15,8 +17,6 @@ import {
   Image as ImageIcon,
   Type,
   GitCompare,
-  Upload,
-  X,
 } from "lucide-react";
 import {
   api,
@@ -24,9 +24,9 @@ import {
   type GenerateResponse,
   type GenerationMode,
   type PromptSegment,
-  type ReferenceImageInput,
   type SessionRecord,
 } from "../../lib/api";
+import { buildDraftExplanationSummary, buildDraftFeedback, buildDraftSegments } from "../../lib/promptDraft";
 
 const mono: React.CSSProperties = {
   fontFamily: "'Roboto Mono', monospace",
@@ -35,6 +35,15 @@ const mono: React.CSSProperties = {
 };
 
 const ease = [0.16, 1, 0.3, 1] as const;
+
+function extractRefinedProposal(markdown: string): string {
+  const match = markdown.match(/### Refined Proposal\s*\n+([\s\S]*?)(\n+###|$)/i);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  return "";
+}
+
 const segmentColors = ["#D1FF00", "#7DFFAF", "#FF7D7D", "#7DB5FF", "#FFB87D"];
 const frigateText = "#050505";
 const frigateMuted = "#686868";
@@ -94,31 +103,10 @@ function buildExplanationText(segment: PromptSegment, mode: GenerationMode) {
   return `"${segment.text}" is providing secondary context that supports the final ${mode === "image" ? "visual treatment" : "wording"}, but with lower leverage.`;
 }
 
-function readReferenceImage(file: File): Promise<ReferenceImageInput> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      if (!result) {
-        reject(new Error("Unable to read the selected image."));
-        return;
-      }
-      resolve({
-        data_url: result,
-        mime_type: file.type || "image/png",
-        name: file.name,
-      });
-    };
-    reader.onerror = () => reject(new Error("Unable to read the selected image."));
-    reader.readAsDataURL(file);
-  });
-}
-
 export function ComposerPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<GenerationMode>("image");
-  const [prompt, setPrompt] = useState(starterPrompts.image);
-  const [referenceImage, setReferenceImage] = useState<ReferenceImageInput | null>(null);
+  const [mode, setMode] = useState<GenerationMode>("text");
+  const [prompt, setPrompt] = useState(starterPrompts.text);
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [history, setHistory] = useState<SessionRecord[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -126,6 +114,8 @@ export function ComposerPage() {
   const [error, setError] = useState<string | null>(null);
   const [backendNotice, setBackendNotice] = useState<string | null>(null);
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [liveResult, setLiveResult] = useState<{ segments: PromptSegment[]; summary: any } | null>(null);
   const [activePanel, setActivePanel] = useState<"explain" | "insights" | "history">("explain");
 
   async function loadHistory() {
@@ -148,7 +138,7 @@ export function ComposerPage() {
     void loadHistory();
   }, []);
 
-  const segments = useMemo(() => {
+  const resultSegments = useMemo(() => {
     const sourceSegments =
       result?.segments?.length
         ? result.segments
@@ -168,7 +158,59 @@ export function ComposerPage() {
     }));
   }, [result]);
 
+  // Live NLP Segmentation with Debounce
+  useEffect(() => {
+    if (!prompt.trim()) {
+      setLiveResult(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsAnalyzing(true);
+      try {
+        const response = await api.analyze({ prompt, mode });
+        setLiveResult({
+          segments: response.segments.map((s, i) => ({
+            ...s,
+            influence: s.impact,
+            color: segmentColors[i % segmentColors.length],
+          })),
+          summary: response.explanation_summary,
+        });
+      } catch (err) {
+        console.error("Live analysis failed:", err);
+        // Fallback to local logic if backend fails
+        const localSegments = buildDraftSegments(prompt, mode).map((s, i) => ({
+          ...s,
+          influence: s.impact,
+          color: segmentColors[i % segmentColors.length],
+        }));
+        setLiveResult({
+          segments: localSegments,
+          summary: buildDraftExplanationSummary(prompt, mode),
+        });
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [mode, prompt]);
+
+  const draftSegments = liveResult?.segments || [];
+
+  const isDraftDirty =
+    !result ||
+    result.session.mode !== mode ||
+    result.session.prompt.trim() !== prompt.trim();
+
+  const segments = isDraftDirty ? draftSegments : resultSegments;
+  const explanationSummary = isDraftDirty ? (liveResult?.summary || buildDraftExplanationSummary(prompt, mode)) : result?.explanation_summary;
+
   const guidedFeedback = useMemo(() => {
+    if (isDraftDirty) {
+      return buildDraftFeedback(prompt, mode, draftSegments);
+    }
     if (!result) return [];
 
     const feedback = [];
@@ -193,26 +235,22 @@ export function ComposerPage() {
     );
 
     return feedback;
-  }, [mode, result, segments]);
+  }, [draftSegments, isDraftDirty, mode, prompt, result, segments]);
 
   async function handleGenerate() {
-    if (!prompt.trim() && !referenceImage) return;
+    if (!prompt.trim()) return;
 
     setIsGenerating(true);
     setError(null);
 
     try {
-      const response = await api.generate({ prompt, mode, source: "composer", reference_image: referenceImage });
+      const response = await api.generate({ prompt, mode, source: "composer" });
       setResult(response);
-      const sessions = await api.sessions(8);
-      setHistory(sessions.sessions);
-      setBackendNotice(
-        response.isFallback
-          ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data."
-          : sessions.isFallback
-            ? sessions.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data."
-            : null,
-      );
+      setHistory((current) => {
+        const next = [response.session, ...current.filter((session) => session.id !== response.session.id)];
+        return next.slice(0, 8);
+      });
+      setBackendNotice(response.isFallback ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data." : null);
       setActivePanel("explain");
     } catch (generationError) {
       setError(generationError instanceof Error ? generationError.message : "Generation failed.");
@@ -238,30 +276,15 @@ export function ComposerPage() {
   }
 
   function openInWhatIf(nextPrompt = prompt, nextMode = mode) {
-    if (!nextPrompt.trim() && !referenceImage) return;
+    if (!nextPrompt.trim()) return;
 
     navigate("/what-if", {
       state: {
         prompt: nextPrompt.trim(),
         mode: nextMode,
         fromComposer: true,
-        referenceImage,
       },
     });
-  }
-
-  async function handleReferenceImageChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const nextReferenceImage = await readReferenceImage(file);
-      setReferenceImage(nextReferenceImage);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Unable to load the selected image.");
-    } finally {
-      event.target.value = "";
-    }
   }
 
   return (
@@ -356,23 +379,43 @@ export function ComposerPage() {
 
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3" style={{ border: "1px solid #00000010", backgroundColor: "#F2F1E8", padding: 14 }}>
                 <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>Prompt Canvas</span>
-                <button
-                  type="button"
-                  onClick={() => openInWhatIf()}
-                  disabled={!prompt.trim() && !referenceImage}
-                  className="cursor-pointer border-none flex items-center gap-2"
-                  style={{
-                    ...mono,
-                    fontSize: 10,
-                    color: frigateText,
-                    backgroundColor: "#D1FF00",
-                    padding: "9px 12px",
-                    opacity: prompt.trim() || referenceImage ? 1 : 0.45,
-                  }}
-                >
-                  <GitCompare size={12} />
-                  Send To What If
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openInWhatIf()}
+                    disabled={!prompt.trim()}
+                    className="cursor-pointer border-none flex items-center gap-2"
+                    style={{
+                      ...mono,
+                      fontSize: 10,
+                      color: frigateMuted,
+                      backgroundColor: "#F2F1E8",
+                      padding: "9px 12px",
+                      border: "1px solid #00000014",
+                      opacity: prompt.trim() ? 1 : 0.45,
+                    }}
+                  >
+                    <GitCompare size={12} />
+                    What If
+                  </button>
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !prompt.trim()}
+                    className="cursor-pointer border-none flex items-center gap-2"
+                    style={{
+                      ...mono,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: frigateText,
+                      backgroundColor: "#D1FF00",
+                      padding: "9px 14px",
+                      opacity: isGenerating || !prompt.trim() ? 0.6 : 1,
+                    }}
+                  >
+                    {isGenerating ? <RefreshCw size={11} className="animate-spin" /> : <Send size={11} />}
+                    {isGenerating ? "Generating..." : `Run ${mode === "image" ? "Image" : "Text"}`}
+                  </button>
+                </div>
               </div>
 
             <textarea
@@ -395,84 +438,67 @@ export function ComposerPage() {
             <div className="mt-4 p-4" style={{ border: "1px solid #00000010", backgroundColor: "#F2F1E8" }}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 6 }}>Source Inputs</div>
+                  <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 6 }}>
+                    Live Segmentation {isAnalyzing && <span className="animate-pulse" style={{ color: "#D1FF00" }}>• Analyzing...</span>}
+                  </div>
                   <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, margin: 0 }}>
-                    Blend written intent with a visual anchor and Frigate will show which ingredients carried the run, where they landed, and how strongly they shaped the result.
+                    Frigate utilizes real-time NLP to break your draft into steering segments, ensuring structure and intent are clear before execution.
                   </p>
                 </div>
-                <label
-                  className="cursor-pointer"
-                  style={{ ...mono, fontSize: 10, color: frigateText, backgroundColor: "#D1FF00", padding: "10px 12px" }}
-                >
-                  <input type="file" accept="image/*" className="hidden" onChange={handleReferenceImageChange} />
-                  <span className="flex items-center gap-2">
-                    <Upload size={12} />
-                    {referenceImage ? "Replace Image" : "Attach Image"}
-                  </span>
-                </label>
+                <span style={{ ...mono, fontSize: 10, color: isDraftDirty ? "#1A3D1A" : frigateMuted }}>
+                  {isDraftDirty ? "Draft View" : "Last Run View"}
+                </span>
               </div>
 
-              {referenceImage && (
-                <div className="flex flex-wrap items-center gap-4">
-                  {referenceImage.data_url ? (
-                    <img src={referenceImage.data_url} alt={referenceImage.name || "Reference"} style={{ width: 120, height: 90, objectFit: "cover", border: "1px solid #00000010" }} />
-                  ) : null}
-                  <div style={{ flex: 1, minWidth: 180 }}>
-                    <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 8 }}>Reference Image Live</div>
-                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, margin: 0 }}>
-                      {referenceImage.name || "Uploaded image"} is acting as a visual anchor, so Frigate can read the image and prompt as one composed instruction set.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setReferenceImage(null)}
-                    className="cursor-pointer border-none flex items-center gap-2"
-                    style={{ ...mono, fontSize: 10, color: frigateMuted, backgroundColor: "#F9F8EF", padding: "8px 10px" }}
-                  >
-                    <X size={12} />
-                    Clear
-                  </button>
+              {segments.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {segments.map((segment, index) => (
+                    <button
+                      key={`${segment.text}-${index}`}
+                      onMouseEnter={() => setActiveSegment(index)}
+                      onMouseLeave={() => setActiveSegment(null)}
+                      className="cursor-default border-none flex flex-col items-start gap-1"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        color: frigateText,
+                        backgroundColor: activeSegment === index ? segment.color : "#F9F8EF",
+                        border: `1px solid ${activeSegment === index ? segment.color : "#00000010"}`,
+                        padding: "10px 14px",
+                        minWidth: 100,
+                      }}
+                    >
+                      <span style={{ ...mono, fontSize: 8, opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        {segment.label}
+                      </span>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>
+                        {segment.text.length > 32 ? `${segment.text.slice(0, 30)}...` : segment.text}
+                      </span>
+                    </button>
+                  ))}
                 </div>
+              ) : (
+                <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>Type a prompt to populate the live segment map.</span>
               )}
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
-                {suggestionMap[mode].map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="cursor-pointer border-none"
-                    style={{
-                      ...mono,
-                      fontSize: 10,
-                      color: frigateMuted,
-                      backgroundColor: "#9C9C9C0A",
-                      padding: "8px 12px",
-                      border: "1px solid #9C9C9C10",
-                    }}
-                  >
-                    + {suggestion}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating || (!prompt.trim() && !referenceImage)}
-                className="cursor-pointer border-none flex items-center gap-2"
-                style={{
-                  ...mono,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: frigateText,
-                  backgroundColor: "#D1FF00",
-                  padding: "13px 20px",
-                  opacity: isGenerating || (!prompt.trim() && !referenceImage) ? 0.6 : 1,
-                }}
-              >
-                {isGenerating ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
-                {isGenerating ? "Generating..." : `Run ${mode === "image" ? "Image" : "Text"} Generation`}
-              </button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {suggestionMap[mode].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="cursor-pointer border-none"
+                  style={{
+                    ...mono,
+                    fontSize: 10,
+                    color: frigateMuted,
+                    backgroundColor: "#9C9C9C0A",
+                    padding: "7px 11px",
+                    border: "1px solid #9C9C9C10",
+                  }}
+                >
+                  + {suggestion}
+                </button>
+              ))}
             </div>
           </motion.div>
 
@@ -484,25 +510,26 @@ export function ComposerPage() {
           >
             <div className="mb-4 flex items-center gap-2">
               <Eye size={13} style={{ color: frigateMuted }} />
-              <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>Prompt-to-Output Map</span>
+              <span style={{ ...mono, fontSize: 10, color: frigateMuted }}>{isDraftDirty ? "Live Prompt Map" : "Prompt-to-Output Map"}</span>
             </div>
             <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, marginBottom: 16 }}>
-              Frigate breaks the run into visible steering layers. The strongest segments usually place the subject, look, and layout first, while lighter segments tune the finish.
+              {isDraftDirty
+                ? "These segments update as you type, so you can see which clauses are currently steering the draft the hardest."
+                : "Frigate breaks the run into visible steering layers. The strongest segments usually place the subject, look, and layout first, while lighter segments tune the finish."}
             </p>
             <div className="flex flex-wrap gap-3">
               {segments.length > 0 ? (
                 segments.map((segment, index) => (
                   <motion.button
                     key={`${segment.text}-${index}`}
-                    className="cursor-pointer border-none"
+                    className="cursor-pointer border-none flex flex-col items-start gap-1"
                     style={{
                       fontFamily: "Inter, sans-serif",
-                      fontSize: 15,
-                      fontWeight: 600,
                       color: frigateText,
                       backgroundColor: activeSegment === index ? segment.color : "#F9F8EF",
                       border: `1px solid ${activeSegment === index ? segment.color : "#9C9C9C20"}`,
-                      padding: "8px 14px",
+                      padding: "10px 14px",
+                      minWidth: 120,
                     }}
                     onMouseEnter={() => setActiveSegment(index)}
                     onMouseLeave={() => setActiveSegment(null)}
@@ -510,8 +537,15 @@ export function ComposerPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, ease, delay: 0.1 + index * 0.05 }}
                   >
-                    {segment.label}
-                    <span style={{ ...mono, fontSize: 9, marginLeft: 8, opacity: 0.6 }}>{Math.round(segment.influence * 100)}%</span>
+                    <div className="flex w-full items-center justify-between gap-3">
+                      <span style={{ ...mono, fontSize: 8, opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        {segment.label}
+                      </span>
+                      <span style={{ ...mono, fontSize: 9, opacity: 0.5 }}>{Math.round(segment.influence * 100)}%</span>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                      {segment.text.length > 36 ? `${segment.text.slice(0, 34)}...` : segment.text}
+                    </span>
                   </motion.button>
                 ))
               ) : (
@@ -527,6 +561,9 @@ export function ComposerPage() {
                 <div style={{ fontFamily: "Inter, sans-serif", fontSize: 17, fontWeight: 700, color: frigateText }}>
                   {mode === "image" ? "Visual output with influence heatmap" : "Written output preview"}
                 </div>
+                {result && isDraftDirty ? (
+                  <div style={{ ...mono, fontSize: 9, color: "#1A3D1A", marginTop: 6 }}>Draft changed. Run again to refresh this output.</div>
+                ) : null}
               </div>
               {result && (
                 <div className="flex items-center gap-2">
@@ -548,6 +585,23 @@ export function ComposerPage() {
                     <GitCompare size={12} />
                     Compare In What If
                   </button>
+                  {mode === "text" && extractRefinedProposal(result.output) && (
+                    <button
+                      type="button"
+                      className="cursor-pointer border-none flex items-center gap-2"
+                      style={{ ...mono, fontSize: 10, color: "#1A3D1A", backgroundColor: "#F2F1E8", border: "1px solid #1A3D1A20", padding: "8px 10px" }}
+                      onClick={() => {
+                        const proposal = extractRefinedProposal(result.output);
+                        if (proposal) {
+                          setPrompt(proposal);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }
+                      }}
+                    >
+                      <Zap size={12} />
+                      Use Refined Proposal
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -587,23 +641,34 @@ export function ComposerPage() {
                     <div className="mb-5">
                       <div className="relative w-full overflow-hidden" style={{ backgroundColor: "#1C1E19", aspectRatio: "16/10", border: "1px solid #9C9C9C10" }}>
                         <img src={result.output} alt={prompt || "Generated Frigate visual"} className="absolute inset-0 h-full w-full object-cover" />
-                        <ImageGenerationHeatmap segments={segments} activeIndex={activeSegment} />
+                        <ImageGenerationHeatmap segments={resultSegments} activeIndex={activeSegment} />
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <span style={{ ...mono, fontSize: 10, color: frigateMuted, backgroundColor: "#F2F1E8", padding: "6px 10px" }}>
                           {result.provider} | live image
                         </span>
-                        {referenceImage?.name ? (
-                          <span style={{ ...mono, fontSize: 10, color: "#1A3D1A", backgroundColor: "#D1FF0018", padding: "6px 10px" }}>
-                            ref anchor | {referenceImage.name}
-                          </span>
-                        ) : null}
                       </div>
                     </div>
                   ) : (
-                    <div className="mb-5" style={{ border: "1px solid #9C9C9C10", backgroundColor: "#EBEAE0", padding: 24 }}>
-                      <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 12 }}>{result.provider} | generated text</div>
-                      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 16, lineHeight: "185%", color: frigateText, whiteSpace: "pre-wrap" }}>{result.output}</p>
+                    <div className="mb-5" style={{ border: "1px solid #9C9C9C10", backgroundColor: "#EBEAE0", padding: "32px 40px" }}>
+                      <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 20, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                        {result.provider} | architectural analysis
+                      </div>
+                      <div className={`prose-frigate ${activeSegment !== null ? "segment-active" : ""}`}>
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            h3: ({node, ...props}) => {
+                              const isHighlighted = activeSegment !== null;
+                              return <h3 className={isHighlighted ? "highlight-glow" : ""} style={{ color: frigateText, marginTop: 32, marginBottom: 16, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "IBM Plex Mono, monospace" }} {...props} />;
+                            },
+                            p: ({node, ...props}) => <p style={{ color: frigateText, fontSize: 16, lineHeight: "1.9", marginBottom: 24, fontWeight: 400 }} {...props} />,
+                            li: ({node, ...props}) => <li style={{ color: frigateText, fontSize: 15, lineHeight: "1.7", marginBottom: 8 }} {...props} />
+                          }}
+                        >
+                          {result.output}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   )}
 
@@ -644,14 +709,16 @@ export function ComposerPage() {
           <div className="flex-1 overflow-y-auto" style={{ padding: "18px 20px" }}>
             {activePanel === "explain" && (
               <div className="flex flex-col gap-4">
-                {result?.explanation_summary ? (
+                {explanationSummary ? (
                   <div className="p-4" style={{ border: "1px solid #00000010", backgroundColor: "#F9F8EF" }}>
-                    <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 10 }}>How This Run Was Composed</div>
+                    <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 10 }}>
+                      {isDraftDirty ? "How This Draft Is Read" : "How This Run Was Composed"}
+                    </div>
                     <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, marginBottom: 10 }}>
-                      {result.explanation_summary.overview}
+                      {explanationSummary?.overview}
                     </p>
                     <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, margin: 0 }}>
-                      {result.explanation_summary.segment_strategy}
+                      {explanationSummary?.segment_strategy}
                     </p>
                   </div>
                 ) : null}

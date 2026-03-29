@@ -4,16 +4,14 @@ from __future__ import annotations
 
 import uvicorn
 
-from app import create_app
-from config import get_settings
-
-settings = get_settings()
-app = create_app()
-
 
 if __name__ == "__main__":
+    from config import get_settings
+
+    settings = get_settings()
     uvicorn.run(
-        "run:app",
+        "app.main:create_app",
+        factory=True,
         host=settings.host,
         port=settings.port,
         reload=settings.reload,

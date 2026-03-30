@@ -373,12 +373,12 @@ class XAIOrchestrator:
         summary = PromptExplanationSummary(
             overview="Frigate is reading this draft as a stack of steering instructions.",
             segment_strategy=f"The draft is currently led by the {strongest} layer.",
-            improvement_tip="Add one more concrete clause for clearer separation."
+            improvement_tip="Add one more concrete clause for clearer separation.",
         )
-        
+
         return AnalyzeResponse(
             segments=segments,
-            explanation_summary=summary
+            explanation_summary=summary,
         )
 
     @staticmethod

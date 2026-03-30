@@ -39,16 +39,12 @@ class GenerateRequest(BaseModel):
         if not self.prompt.strip() and self.reference_image is None:
             raise ValueError("Provide prompt text, a reference image, or both.")
         return self
+
+
 class AnalyzeRequest(BaseModel):
     """Data for live-typing analysis."""
     prompt: str = Field(..., min_length=1)
     mode: Literal["text", "image"] = Field(default="text")
-
-
-class AnalyzeResponse(BaseModel):
-    """What we send back after a live analysis."""
-    segments: list[PromptSegment]
-    explanation_summary: PromptExplanationSummary
 
 
 class TokenImpact(BaseModel):
@@ -79,6 +75,13 @@ class PromptExplanationSummary(BaseModel):
     overview: str = Field(..., min_length=1, max_length=500)
     segment_strategy: str = Field(..., min_length=1, max_length=500)
     improvement_tip: str = Field(..., min_length=1, max_length=500)
+
+
+class AnalyzeResponse(BaseModel):
+    """What we send back after a live analysis."""
+
+    segments: list[PromptSegment]
+    explanation_summary: PromptExplanationSummary
 
 
 class SegmentChange(BaseModel):

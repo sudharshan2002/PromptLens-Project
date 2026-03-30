@@ -23,6 +23,7 @@ import {
   formatRelativeTime,
   type GenerateResponse,
   type GenerationMode,
+  type PromptExplanationSummary,
   type PromptSegment,
   type SessionRecord,
 } from "../../lib/api";
@@ -71,6 +72,11 @@ const composerPlaceholders: Record<GenerationMode, string> = {
   text: "Draft the request (e.g., topic, format, tone)...",
 };
 
+type LiveAnalysisState = {
+  segments: PromptSegment[];
+  summary: PromptExplanationSummary;
+};
+
 function ConfidenceMeter({ value, label }: { value: number; label: string }) {
   return (
     <div>
@@ -115,7 +121,7 @@ export function ComposerPage() {
   const [backendNotice, setBackendNotice] = useState<string | null>(null);
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [liveResult, setLiveResult] = useState<{ segments: PromptSegment[]; summary: any } | null>(null);
+  const [liveResult, setLiveResult] = useState<LiveAnalysisState | null>(null);
   const [activePanel, setActivePanel] = useState<"explain" | "insights" | "history">("explain");
 
   async function loadHistory() {
@@ -211,9 +217,10 @@ export function ComposerPage() {
     if (isDraftDirty) {
       return buildDraftFeedback(prompt, mode, draftSegments);
     }
+
     if (!result) return [];
 
-    const feedback = [];
+    const feedback: string[] = [];
     const strongestToken = segments[0]?.label || segments[0]?.text;
 
     if (strongestToken) {
@@ -222,6 +229,7 @@ export function ComposerPage() {
     if (result.explanation_summary?.segment_strategy) {
       feedback.push(result.explanation_summary.segment_strategy);
     }
+    if (segments.length < 3) {
       feedback.push("Add more details to get a better result.");
     } else {
       feedback.push("This prompt looks okay.");
@@ -769,8 +777,8 @@ export function ComposerPage() {
                 {guidedFeedback.length > 0 && (
                   <div className="p-4" style={{ border: "1px solid #00000010" }}>
                     <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 10 }}>Guided Feedback</div>
-                    {guidedFeedback.map((feedback) => (
-                      <div key={feedback} className="mb-3 flex items-start gap-2 last:mb-0">
+                    {guidedFeedback.map((feedback, index) => (
+                      <div key={`${index}-${feedback}`} className="mb-3 flex items-start gap-2 last:mb-0">
                         <Zap size={12} style={{ color: "#1A3D1A", flexShrink: 0, marginTop: 4 }} />
                         <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: frigateMuted, lineHeight: "160%" }}>{feedback}</span>
                       </div>

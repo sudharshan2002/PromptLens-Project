@@ -279,10 +279,8 @@ export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const timersRef = useRef<number[]>([]);
-  const menuLinks = isAuthenticated ? [...baseMenuLinks.slice(0, 4), { label: "PROFILE", path: "/profile" }, baseMenuLinks[4]] : baseMenuLinks;
-  const utilityLinks = isAuthenticated
-    ? [...baseUtilityLinks.slice(0, 2), { label: "PROFILE", path: "/profile" }, baseUtilityLinks[2]]
-    : baseUtilityLinks;
+  const menuLinks = baseMenuLinks;
+  const utilityLinks = baseUtilityLinks;
 
   const menuVisible = menuPhase !== "closed";
 

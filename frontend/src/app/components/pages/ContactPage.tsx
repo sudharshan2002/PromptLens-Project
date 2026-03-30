@@ -21,33 +21,33 @@ const palette = {
 };
 
 const projectTypes = [
-  "Discovery call",
-  "Platform evaluation",
-  "Workflow review",
-  "Implementation planning",
+  "General Question",
+  "Bug Report",
+  "Feature Request",
+  "Other",
 ];
 
 const quickLinks = [
   {
     icon: Sparkles,
-    label: "Discovery",
-    title: "See where Frigate fits",
-    body: "Talk through your current workflow, the outputs you care about, and where explainability needs to show up first.",
-    subject: "Frigate discovery request",
+    label: "Question",
+    title: "Ask a question",
+    body: "Have a question about how the app works? Send us an email.",
+    subject: "Frigate Question",
   },
   {
     icon: Puzzle,
-    label: "Integration",
-    title: "Plan the rollout",
-    body: "Map Frigate into your generation stack, review process, or internal tooling without disrupting what already works.",
-    subject: "Frigate integration inquiry",
+    label: "Bug",
+    title: "Report a bug",
+    body: "Found an issue with the app? Let us know so we can fix it.",
+    subject: "Frigate Bug Report",
   },
   {
     icon: MessageSquareMore,
-    label: "Strategy",
-    title: "Fix a trust or quality gap",
-    body: "Bring the prompt path, the review bottleneck, or the output inconsistency that is slowing the team down.",
-    subject: "Frigate workflow strategy inquiry",
+    label: "Feedback",
+    title: "Give feedback",
+    body: "Have a suggestion for a new feature? We'd love to hear it.",
+    subject: "Frigate Feedback",
   },
 ];
 
@@ -152,7 +152,7 @@ function ContactHero() {
                   color: palette.cream,
                 }}
               >
-                Talk to us about the workflow you need to make clearer, safer, and easier to ship.
+                Get in touch with us if you want to know more about the project.
               </span>
             </AnimatedHeadline>
 
@@ -167,7 +167,7 @@ function ContactHero() {
                   margin: "28px 0 0 0",
                 }}
               >
-                Frigate is for teams that need visibility into prompt shaping. Reach out for better reviewability and cleaner comparisons.
+                Frigate was built as a student project. Feel free to contact us with any questions about the code or features.
               </p>
             </FadeIn>
           </div>
@@ -186,7 +186,7 @@ function ContactHero() {
                   padding: "13px 16px",
                 }}
               >
-                <span>Email Product Team</span>
+                <span>Email Us</span>
                 <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
               </a>
 
@@ -257,7 +257,7 @@ function ContactHero() {
                   >
                     <Mail size={15} style={{ color: palette.lime, marginTop: 2 }} />
                     <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.5, color: "rgba(244,244,232,0.62)" }}>
-                      Best for workflow reviews and platform evaluations.
+                      Best for general questions about the app.
                     </p>
                   </div>
 
@@ -267,7 +267,7 @@ function ContactHero() {
                   >
                     <CalendarRange size={15} style={{ color: palette.lime, marginTop: 2 }} />
                     <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.5, color: "rgba(244,244,232,0.62)" }}>
-                      Helpful context: what you generate and what a stronger workflow unlocks.
+                      Helpful context: what you are trying to do and what went wrong.
                     </p>
                   </div>
                 </div>
@@ -309,7 +309,7 @@ function QuickRoutes() {
                   maxWidth: 560,
                 }}
               >
-                Start with the track that matches the work in front of you.
+                How can we help?
               </h2>
             </BlurReveal>
           </div>
@@ -326,7 +326,7 @@ function QuickRoutes() {
                   maxWidth: 620,
                 }}
               >
-                Teams use Frigate to evaluate fit, plan implementation, or fix untrusted workflows.
+                Send us an email depending on what you need.
               </p>
             </BlurReveal>
           </div>
@@ -465,7 +465,7 @@ function ContactFormSection() {
                   maxWidth: 620,
                 }}
               >
-                Share the workflow and the outcome you need to improve.
+                Send us a message and we'll get back to you.
               </h2>
             </BlurReveal>
             <BlurReveal delay={0.14}>
@@ -479,7 +479,7 @@ function ContactFormSection() {
                   maxWidth: 470,
                 }}
               >
-                Briefly describe what your team generates and what a better workflow should unlock.
+                Briefly describe what you're trying to do.
               </p>
             </BlurReveal>
 
@@ -494,9 +494,9 @@ function ContactFormSection() {
                 <div style={{ ...mono, fontSize: 10, color: palette.lime, marginBottom: 14 }}>[Helpful Context]</div>
                 <div className="space-y-3">
                   {[
-                    "Outputs your team reviews.",
-                    "Where confidence drops or rework piles up.",
-                    "What a better workflow unlocks.",
+                    "What you expected to happen.",
+                    "What actually happened.",
+                    "Any error messages.",
                   ].map((line) => (
                     <div key={line} className="flex items-start gap-3">
                       <div className="mt-[7px] h-[6px] w-[6px] rounded-full" style={{ backgroundColor: palette.lime }} />
@@ -653,7 +653,7 @@ function ClosingCTA() {
                 color: palette.black,
               }}
             >
-              Explore the composer first, then come back when you want help turning it into a working team process.
+              Check out the app, and let us know if you find any bugs.
             </span>
           </AnimatedHeadline>
         </div>

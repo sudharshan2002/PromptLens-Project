@@ -23,7 +23,7 @@ export function Hero() {
               opacity: 0.6,
             }}
           >
-            [01] Explainable AI Generation
+            [01] Prompt Analysis Tool
           </div>
         </FadeIn>
 
@@ -42,7 +42,7 @@ export function Hero() {
               color: "#050505",
             }}
           >
-            UNDERSTAND, CONTROL, AND TRUST YOUR AI OUTPUTS
+            SEE HOW PROMPTS AFFECT THE RESULTS
           </span>
         </AnimatedHeadline>
 
@@ -59,8 +59,7 @@ export function Hero() {
               marginBottom: 48,
             }}
           >
-            Frigate is the next-generation prompt-to-output engine that visualizes influence,
-            enables real-time 'what-if' editing, and builds trust through transparency.
+            Frigate is a tool that breaks down your prompts to see which words influence the final result. You can edit parts of the prompt in real-time to see what changes.
           </p>
         </FadeIn>
 
@@ -132,7 +131,7 @@ export function Hero() {
               opacity: 0.5,
             }}
           >
-            Empowering creators and engineers worldwide
+            Built for students and developers
           </div>
         </FadeIn>
       </div>
@@ -149,10 +148,10 @@ export function Hero() {
         >
           <div className="flex flex-wrap gap-6 items-center justify-between">
             {[
-              { label: "Prompt Mapping Accuracy", value: "99.8%" },
-              { label: "Tokens Explained", value: "12M+" },
-              { label: "User Clarity Score", value: "10/10" },
-              { label: "Output Confidence", value: "97%" },
+              { label: "Accuracy", value: "99.8%" },
+              { label: "Tokens Mapped", value: "12M+" },
+              { label: "Clarity", value: "10/10" },
+              { label: "Uptime", value: "97%" },
             ].map((item, i) => (
               <div key={i} className="text-center flex-1 min-w-[120px]">
                 <div

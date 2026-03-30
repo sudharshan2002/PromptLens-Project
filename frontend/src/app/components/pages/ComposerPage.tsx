@@ -55,14 +55,14 @@ const starterPrompts: Record<GenerationMode, string> = {
 
 const suggestionMap: Record<GenerationMode, string[]> = {
   image: [
-    "Live influence overlay",
-    "Before/after diff ribbon",
-    "Multimodal control room",
+    "Make it darker",
+    "High contrast",
+    "Minimalist style",
   ],
   text: [
-    "Sharper CTA",
-    "Trusted deployment note",
-    "Short product summary",
+    "Make it shorter",
+    "Professional tone",
+    "Add bullet points",
   ],
 };
 
@@ -222,16 +222,15 @@ export function ComposerPage() {
     if (result.explanation_summary?.segment_strategy) {
       feedback.push(result.explanation_summary.segment_strategy);
     }
-    if (result.session.clarity_score < 84) {
-      feedback.push("Add one more concrete constraint to tighten output predictability.");
+      feedback.push("Add more details to get a better result.");
     } else {
-      feedback.push("Prompt structure is clear enough to support stable refinement.");
+      feedback.push("This prompt looks okay.");
     }
     feedback.push(
       result.explanation_summary?.improvement_tip ||
         (mode === "image"
-          ? "Add an explainability cue if you want a richer visual story in the dashboard."
-          : "A short CTA or closing outcome statement would make the text output feel more launch-ready."),
+          ? "Try adding a specific style or color."
+          : "Try adding a tone or length constraint."),
     );
 
     return feedback;
@@ -627,7 +626,7 @@ export function ComposerPage() {
                     transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                   />
                   <span style={{ ...mono, fontSize: 10, color: frigateMuted, marginTop: 16 }}>
-                    Building with Frigate Live...
+                    Running prompt...
                   </span>
                 </motion.div>
               ) : error ? (

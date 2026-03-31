@@ -77,9 +77,9 @@ export function DashboardPage() {
           setSessions(sessionResponse);
           setBackendNotice(
             dashboardResponse.isFallback
-              ? dashboardResponse.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data."
+              ? dashboardResponse.fallbackMessage || "Live services are unavailable, so Frigate is showing local sample data."
               : sessionResponse.isFallback
-                ? sessionResponse.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data."
+                ? sessionResponse.fallbackMessage || "Live services are unavailable, so Frigate is showing local sample data."
                 : null,
           );
         }
@@ -172,7 +172,7 @@ export function DashboardPage() {
 
         {backendNotice && (
           <div className="p-4" style={{ border: "1px solid #D1FF00", backgroundColor: "#D1FF0010" }}>
-            <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 8 }}>Preview Mode</div>
+            <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 8 }}>Offline Mode</div>
             <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: "#686868", margin: 0 }}>{backendNotice}</p>
           </div>
         )}
@@ -187,7 +187,7 @@ export function DashboardPage() {
         ) : activeTab === "overview" && dashboard ? (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard icon={<Shield size={13} />} label="Avg Confidence" value={`${Math.round(dashboard.avg_confidence)}%`} sub="Across recent runs" delay={0.3} />
+              <StatCard icon={<Shield size={13} />} label="Avg Trust" value={`${Math.round(dashboard.avg_confidence)}%`} sub="Across recent runs" delay={0.3} />
               <StatCard icon={<Eye size={13} />} label="Avg Clarity" value={`${Math.round(dashboard.avg_clarity)}%`} sub="Prompt understanding" delay={0.36} />
               <StatCard icon={<Sparkles size={13} />} label="Avg Quality" value={`${Math.round(dashboard.avg_quality)}%`} sub="Output quality index" delay={0.42} />
               <StatCard icon={<Activity size={13} />} label="Total Runs" value={`${dashboard.total_runs}`} sub={`${Math.round(dashboard.avg_response_time)}ms avg latency`} delay={0.48} />
@@ -198,7 +198,7 @@ export function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <span style={{ ...mono, fontSize: 10, color: "#686868" }}>Performance Trends</span>
                   <div className="flex items-center gap-3">
-                    {[{ l: "Conf", c: "#D1FF00" }, { l: "Clarity", c: "#7DB5FF" }, { l: "Quality", c: "#7DFFAF" }].map((legend) => (
+                    {[{ l: "Trust", c: "#D1FF00" }, { l: "Clarity", c: "#7DB5FF" }, { l: "Quality", c: "#7DFFAF" }].map((legend) => (
                       <div key={legend.l} className="flex items-center gap-1">
                         <div style={{ width: 6, height: 6, backgroundColor: legend.c }} />
                         <span style={{ ...mono, fontSize: 9, color: "#686868" }}>{legend.l}</span>
@@ -261,7 +261,7 @@ export function DashboardPage() {
                   <div className="flex items-center gap-5">
                     <div className="text-right">
                       <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 13, color: "#D1FF00" }}>{Math.round(run.confidence)}%</div>
-                      <div style={{ ...mono, fontSize: 9, color: "#686868" }}>Conf</div>
+                      <div style={{ ...mono, fontSize: 9, color: "#686868" }}>Trust</div>
                     </div>
                     <div className="text-right">
                       <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 13, color: "#050505" }}>{Math.round(run.clarity)}%</div>

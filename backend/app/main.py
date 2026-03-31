@@ -18,6 +18,7 @@ from app.services.account_service import AccountService
 from app.services.metrics_engine import MetricsEngine
 from app.services.metrics_service import MetricsService
 from app.services.orchestrator import XAIOrchestrator
+from app.services.prompt_ml_scorer import PromptMLScorer
 from app.services.segmenter import PromptSegmenter
 from app.services.session_service import SessionService
 from app.services.whatif_engine import WhatIfEngine
@@ -44,6 +45,7 @@ async def lifespan(app: FastAPI):
     )
     segmenter = PromptSegmenter(settings)
     explainer = ExplainabilityService(settings)
+    prompt_ml_scorer = PromptMLScorer(settings)
     metrics_service = MetricsService(
         settings.sqlite_db_path,
         enabled=False,
@@ -64,6 +66,7 @@ async def lifespan(app: FastAPI):
         metrics_engine=metrics_engine,
         metrics_service=metrics_service,
         session_service=session_service,
+        prompt_ml_scorer=prompt_ml_scorer,
     )
 
     app.state.settings = settings
@@ -76,6 +79,7 @@ async def lifespan(app: FastAPI):
     app.state.metrics_engine = metrics_engine
     app.state.metrics_service = metrics_service
     app.state.session_service = session_service
+    app.state.prompt_ml_scorer = prompt_ml_scorer
     app.state.whatif_engine = whatif_engine
     app.state.heatmap_engine = heatmap_engine
     app.state.orchestrator = orchestrator

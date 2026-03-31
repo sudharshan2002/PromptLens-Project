@@ -146,24 +146,30 @@ class GenerationEngine:
         # 1. Primary: Hugging Face (Qwen)
         if self._hf_client is not None:
             try:
-                output = await asyncio.to_thread(self._run_hf_chat_completion, effective_prompt or "reference-image-led draft")
-                provider_id = "hf-chat:Qwen/Qwen2.5-7B-Instruct"
+                candidate = await asyncio.to_thread(self._run_hf_chat_completion, effective_prompt or "reference-image-led draft")
+                output = self._normalize_text_output(candidate)
+                if output:
+                    provider_id = "hf-chat:Qwen/Qwen2.5-7B-Instruct"
             except Exception as exc:  # pragma: no cover
                 logger.warning("HF chat completion failed, trying Pollinations: %s", exc)
 
         # 2. Secondary: Pollinations (Free, reliable)
         if not output:
             try:
-                output = await asyncio.to_thread(self._run_pollinations_text_generation, effective_prompt)
-                provider_id = "pollinations-text"
+                candidate = await asyncio.to_thread(self._run_pollinations_text_generation, effective_prompt)
+                output = self._normalize_text_output(candidate)
+                if output:
+                    provider_id = "pollinations-text"
             except Exception as exc:  # pragma: no cover
                 logger.warning("Pollinations text generation failed, trying Groq: %s", exc)
 
         # 3. Tertiary: Groq
         if not output and self.settings.groq_api_key:
             try:
-                output = await asyncio.to_thread(self._run_groq_text_generation, effective_prompt)
-                provider_id = f"groq:{self.settings.groq_text_model}"
+                candidate = await asyncio.to_thread(self._run_groq_text_generation, effective_prompt)
+                output = self._normalize_text_output(candidate)
+                if output:
+                    provider_id = f"groq:{self.settings.groq_text_model}"
             except Exception as exc:  # pragma: no cover
                 logger.warning("Groq text generation failed, falling back to mock: %s", exc)
 
@@ -178,6 +184,38 @@ class GenerationEngine:
             analysis_text=effective_prompt,
             latency_ms=round((perf_counter() - started_at) * 1000, 2),
         )
+
+    @staticmethod
+    def _normalize_text_output(value: Any) -> str:
+        """Turn provider text into a safe, displayable string or an empty fallback signal."""
+        if value is None:
+            return ""
+
+        if isinstance(value, dict):
+            for key in ("content", "text", "output"):
+                candidate = value.get(key)
+                if isinstance(candidate, str) and candidate.strip():
+                    value = candidate
+                    break
+            else:
+                return ""
+
+        text = str(value).strip()
+        if not text:
+            return ""
+        if text.lower() in {"null", "none", "undefined", "{}", "[]"}:
+            return ""
+        if text.startswith("data:image"):
+            return ""
+
+        if text.startswith("{") and text.endswith("}"):
+            try:
+                payload = json.loads(text)
+            except Exception:
+                return text
+            return GenerationEngine._normalize_text_output(payload)
+
+        return text
 
     async def generate_image(
         self,

@@ -279,7 +279,7 @@ export function ROICalculator() {
                   marginBottom: 8,
                 }}
               >
-                Output Confidence Score
+                Output Trust Score
               </div>
               <div
                 style={{

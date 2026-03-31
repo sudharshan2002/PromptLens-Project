@@ -25,6 +25,7 @@ import {
   type GenerationMode,
   type PromptExplanationSummary,
   type PromptSegment,
+  type ScoreDetails,
   type SessionRecord,
 } from "../../lib/api";
 import { buildDraftExplanationSummary, buildDraftFeedback, buildDraftSegments } from "../../lib/promptDraft";
@@ -75,7 +76,15 @@ const composerPlaceholders: Record<GenerationMode, string> = {
 type LiveAnalysisState = {
   segments: PromptSegment[];
   summary: PromptExplanationSummary;
+  scoreDetails?: ScoreDetails | null;
 };
+
+function scoreSourceLabel(scoreDetails?: ScoreDetails | null) {
+  if (!scoreDetails) return "Session scores";
+  if (scoreDetails.source === "transformer-regressor") return "Transformer scorer";
+  if (scoreDetails.source === "manifest-linear") return "Linear scorer";
+  return "Built-in scorer";
+}
 
 function ConfidenceMeter({ value, label }: { value: number; label: string }) {
   return (
@@ -129,7 +138,7 @@ export function ComposerPage() {
     try {
       const response = await api.sessions(8);
       setHistory(response.sessions);
-      setBackendNotice(response.isFallback ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data." : null);
+      setBackendNotice(response.isFallback ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing local sample data." : null);
       if (!result && response.sessions.length > 0) {
         setPrompt(response.sessions[0].prompt);
       }
@@ -182,6 +191,7 @@ export function ComposerPage() {
             color: segmentColors[i % segmentColors.length],
           })),
           summary: response.explanation_summary,
+          scoreDetails: response.score_details,
         });
       } catch (err) {
         console.error("Live analysis failed:", err);
@@ -194,6 +204,7 @@ export function ComposerPage() {
         setLiveResult({
           segments: localSegments,
           summary: buildDraftExplanationSummary(prompt, mode),
+          scoreDetails: null,
         });
       } finally {
         setIsAnalyzing(false);
@@ -257,7 +268,7 @@ export function ComposerPage() {
         const next = [response.session, ...current.filter((session) => session.id !== response.session.id)];
         return next.slice(0, 8);
       });
-      setBackendNotice(response.isFallback ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data." : null);
+      setBackendNotice(response.isFallback ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing local sample data." : null);
       setActivePanel("explain");
     } catch (generationError) {
       setError(generationError instanceof Error ? generationError.message : "Generation failed.");
@@ -338,7 +349,7 @@ export function ComposerPage() {
 
         {backendNotice && (
           <div className="p-4" style={{ border: "1px solid #D1FF00", backgroundColor: "#D1FF0010" }}>
-            <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 8 }}>Preview Mode</div>
+            <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 8 }}>Offline Mode</div>
             <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: frigateMuted, margin: 0 }}>{backendNotice}</p>
           </div>
         )}
@@ -658,14 +669,14 @@ export function ComposerPage() {
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <span style={{ ...mono, fontSize: 10, color: frigateMuted, backgroundColor: "#F2F1E8", padding: "6px 10px" }}>
-                          {result.provider} | live image
+                          {result.provider} | generated image
                         </span>
                       </div>
                     </div>
                   ) : (
                     <div className="mb-5" style={{ border: "1px solid #9C9C9C10", backgroundColor: "#EBEAE0", padding: "32px 40px" }}>
                       <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 20, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                        {result.provider} | architectural analysis
+                        {result.provider} | generated text
                       </div>
                       <div className={`prose-frigate ${activeSegment !== null ? "segment-active" : ""}`}>
                         <ReactMarkdown 
@@ -686,7 +697,7 @@ export function ComposerPage() {
                   )}
 
                   <div className="grid grid-cols-3 gap-4">
-                    <ConfidenceMeter value={result.session.trust_score} label="Confidence" />
+                    <ConfidenceMeter value={result.session.trust_score} label="Trust" />
                     <ConfidenceMeter value={result.session.clarity_score} label="Clarity" />
                     <ConfidenceMeter value={result.session.quality_score} label="Quality" />
                   </div>
@@ -793,7 +804,7 @@ export function ComposerPage() {
                 <div>
                   <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 12 }}>Metrics</div>
                   <div className="flex flex-col gap-4">
-                    <ConfidenceMeter value={result?.session.trust_score || 0} label="Overall Confidence" />
+                    <ConfidenceMeter value={result?.session.trust_score || 0} label="Overall Trust" />
                     <ConfidenceMeter value={result?.session.clarity_score || 0} label="Prompt Clarity" />
                     <ConfidenceMeter value={result?.session.quality_score || 0} label="Output Quality" />
                     <ConfidenceMeter value={Math.min(98, (result?.segments.length || result?.mapping.length || 0) * 16)} label="Edit Efficiency" />
@@ -801,13 +812,15 @@ export function ComposerPage() {
                 </div>
 
                 <div>
-                  <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 12 }}>Mapping Analysis</div>
+                  <div style={{ ...mono, fontSize: 10, color: frigateMuted, marginBottom: 12 }}>Run Details</div>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: "Tokens Used", value: `${result?.tokens.length || 0}` },
                       { label: "Tracked Segments", value: `${result?.segments.length || segments.length}` },
                       { label: "Provider", value: result?.provider || "idle" },
                       { label: "Latency", value: result ? `${Math.round(result.session.response_time_ms)}ms` : "0ms" },
+                      { label: "Score Source", value: scoreSourceLabel(isDraftDirty ? liveResult?.scoreDetails : result?.score_details) },
+                      { label: "Model", value: (isDraftDirty ? liveResult?.scoreDetails?.model_name : result?.score_details?.model_name) || "standard" },
                     ].map((tile) => (
                       <div key={tile.label} className="p-4" style={{ backgroundColor: "#9C9C9C06", border: "1px solid #9C9C9C10" }}>
                         <div style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 18, color: frigateText }}>{tile.value}</div>
@@ -815,6 +828,11 @@ export function ComposerPage() {
                       </div>
                     ))}
                   </div>
+                  {(isDraftDirty ? liveResult?.scoreDetails?.notes : result?.score_details?.notes) ? (
+                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: "160%", color: frigateMuted, marginTop: 12 }}>
+                      {isDraftDirty ? liveResult?.scoreDetails?.notes : result?.score_details?.notes}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             )}
@@ -845,7 +863,7 @@ export function ComposerPage() {
                           <Clock size={11} style={{ color: frigateMuted }} />
                           <span style={{ ...mono, fontSize: 9, color: frigateMuted }}>{formatRelativeTime(session.created_at)}</span>
                         </div>
-                        <span style={{ ...mono, fontSize: 9, color: "#1A3D1A" }}>{Math.round(session.trust_score)}% conf</span>
+                        <span style={{ ...mono, fontSize: 9, color: "#1A3D1A" }}>{Math.round(session.trust_score)}% trust</span>
                       </div>
                     </motion.button>
                   ))

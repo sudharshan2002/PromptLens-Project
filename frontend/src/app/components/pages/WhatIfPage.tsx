@@ -110,7 +110,7 @@ export function WhatIfPage() {
         mode: nextMode,
       });
       setResult(response);
-      setBackendNotice(response.isFallback ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing preview data." : null);
+      setBackendNotice(response.isFallback ? response.fallbackMessage || "Live services are unavailable, so Frigate is showing local sample data." : null);
     } catch (compareError) {
       setError(compareError instanceof Error ? compareError.message : "Unable to compare prompts.");
     } finally {
@@ -152,7 +152,7 @@ export function WhatIfPage() {
           ? "prompt-to-output mapping"
           : index === 2
             ? (mode === "image" ? "side-by-side compare" : "draft compare")
-            : "AI teams",
+            : "product teams",
     }));
   }, [mode]);
 
@@ -161,8 +161,8 @@ export function WhatIfPage() {
 
     return [
       {
-        segment: "confidence",
-        delta: `${result.delta.confidence > 0 ? "+" : ""}${Math.round(result.delta.confidence)}% confidence`,
+        segment: "trust",
+        delta: `${result.delta.confidence > 0 ? "+" : ""}${Math.round(result.delta.confidence)}% trust`,
         direction: result.delta.confidence > 0 ? "up" : result.delta.confidence < 0 ? "down" : "neutral",
       },
       {
@@ -261,7 +261,7 @@ export function WhatIfPage() {
 
         {backendNotice && (
           <div className="p-4" style={{ border: "1px solid #D1FF00", backgroundColor: "#D1FF0010" }}>
-            <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 8 }}>Preview Mode</div>
+            <div style={{ ...mono, fontSize: 10, color: "#1A3D1A", marginBottom: 8 }}>Offline Mode</div>
             <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, lineHeight: "165%", color: "#686868", margin: 0 }}>{backendNotice}</p>
           </div>
         )}
@@ -325,7 +325,7 @@ export function WhatIfPage() {
                   <div style={{ ...mono, fontSize: 10, color: "#050505", backgroundColor: index === 1 ? "#D1FF0099" : "#00000008", padding: "3px 8px" }}>{scenario.id}</div>
                   <span style={{ ...mono, fontSize: 10, color: "#686868" }}>{scenario.label}</span>
                 </div>
-                <span style={{ ...mono, fontSize: 10, color: "#686868" }}>{scenario.session ? `${Math.round(scenario.session.trust_score)}% conf` : "pending"}</span>
+                <span style={{ ...mono, fontSize: 10, color: "#686868" }}>{scenario.session ? `${Math.round(scenario.session.trust_score)}% trust` : "pending"}</span>
               </div>
 
               <div className="p-3.5" style={{ borderBottom: "1px solid #9C9C9C08" }}>
@@ -399,7 +399,7 @@ export function WhatIfPage() {
                       </div>
                     )}
                     <div className="absolute bottom-3 right-3">
-                      <span style={{ ...mono, fontSize: 9, color: "#FFFFED", backgroundColor: "#050505cc", padding: "4px 8px" }}>{scenario.session?.provider || "preview-image"}</span>
+                      <span style={{ ...mono, fontSize: 9, color: "#FFFFED", backgroundColor: "#050505cc", padding: "4px 8px" }}>{scenario.session?.provider || "local-image"}</span>
                     </div>
                   </>
                 ) : (
@@ -437,7 +437,7 @@ export function WhatIfPage() {
           </div>
 
           <div className="grid sm:grid-cols-3 gap-4 mb-6">
-            <MetricCard label="Confidence" valueA={result?.original_session.trust_score || 0} valueB={result?.modified_session.trust_score || 0} />
+            <MetricCard label="Trust" valueA={result?.original_session.trust_score || 0} valueB={result?.modified_session.trust_score || 0} />
             <MetricCard label="Clarity" valueA={result?.original_session.clarity_score || 0} valueB={result?.modified_session.clarity_score || 0} />
             <MetricCard label="Quality" valueA={result?.original_session.quality_score || 0} valueB={result?.modified_session.quality_score || 0} />
           </div>

@@ -186,7 +186,7 @@ def build_mock_text_output(prompt: str) -> str:
     tokens = tokenize_text(prompt)
     focus_terms = ", ".join(tokens[:5]) if tokens else "the requested concept"
     return (
-        "Generated response: This draft expands on "
+        "Sample response: This draft expands on "
         f"{focus_terms}. It emphasizes clarity, intent, and a user-facing explanation "
         "that can be inspected in the explainability view."
     )
@@ -227,7 +227,7 @@ def build_mock_image_output(prompt: str) -> str:
         title_font = None
         body_font = None
 
-    draw.text((122, 108), "Mock Image Output", fill=(245, 248, 255, 255), font=title_font)
+    draw.text((122, 108), "Sample Image Output", fill=(245, 248, 255, 255), font=title_font)
     draw.text((122, 214), prompt_line, fill=(240, 245, 255, 255), font=body_font)
     draw.text(
         (122, 628),

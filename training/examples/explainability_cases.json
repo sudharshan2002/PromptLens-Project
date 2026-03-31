@@ -1,0 +1,32 @@
+[
+  {
+    "id": "text-email",
+    "mode": "text",
+    "prompt": "Write a confident product launch email for an AI prompt analysis tool under 120 words."
+  },
+  {
+    "id": "text-summary",
+    "mode": "text",
+    "prompt": "Write a concise executive summary of a machine learning explainability platform in a professional tone."
+  },
+  {
+    "id": "text-social",
+    "mode": "text",
+    "prompt": "Write a short LinkedIn post announcing a prompt analysis dashboard with a persuasive tone."
+  },
+  {
+    "id": "image-portrait",
+    "mode": "image",
+    "prompt": "A cinematic portrait of a futuristic analyst in a neon-lit control room, ultra detailed, dramatic lighting."
+  },
+  {
+    "id": "image-product",
+    "mode": "image",
+    "prompt": "A premium product mockup of an AI analytics dashboard on a laptop in a clean studio setting."
+  },
+  {
+    "id": "image-poster",
+    "mode": "image",
+    "prompt": "A bold editorial poster for an explainable AI conference with geometric composition and high contrast."
+  }
+]

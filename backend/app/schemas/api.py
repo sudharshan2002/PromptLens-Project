@@ -77,11 +77,22 @@ class PromptExplanationSummary(BaseModel):
     improvement_tip: str = Field(..., min_length=1, max_length=500)
 
 
+class ScoreDetails(BaseModel):
+    trust: float = Field(..., ge=0, le=100)
+    clarity: float = Field(..., ge=0, le=100)
+    quality: float = Field(..., ge=0, le=100)
+    source: Literal["heuristic", "manifest-linear", "transformer-regressor"]
+    model_name: str | None = Field(default=None, max_length=120)
+    model_version: str | None = Field(default=None, max_length=40)
+    notes: str | None = Field(default=None, max_length=500)
+
+
 class AnalyzeResponse(BaseModel):
     """What we send back after a live analysis."""
 
     segments: list[PromptSegment]
     explanation_summary: PromptExplanationSummary
+    score_details: ScoreDetails | None = None
 
 
 class SegmentChange(BaseModel):
@@ -178,6 +189,7 @@ class GenerateResponse(BaseModel):
     mapping: list[TokenImpact]
     segments: list[PromptSegment]
     explanation_summary: PromptExplanationSummary
+    score_details: ScoreDetails | None = None
     reference_image_used: bool = False
     session: SessionRecord
     generated: GeneratedArtifacts | None = None

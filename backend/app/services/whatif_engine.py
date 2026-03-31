@@ -6,8 +6,9 @@ import asyncio
 from dataclasses import dataclass
 
 from app.schemas import PromptSegmentProfile, WhatIfAnalysis, WhatIfVariation
+from app.services.explainability import CounterfactualEngine, ImageDiffEngine, RationaleEngine, TextDiffEngine
 from app.services.generator import GenerationEngine, MultimodalGenerationResult
-from app.utils.helpers import clamp, similarity_ratio, trim_text
+from app.utils.helpers import similarity_ratio, trim_text
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,10 @@ class WhatIfEngine:
 
     def __init__(self, generator: GenerationEngine) -> None:
         self.generator = generator
+        self.counterfactual_engine = CounterfactualEngine()
+        self.text_diff_engine = TextDiffEngine()
+        self.image_diff_engine = ImageDiffEngine()
+        self.rationale_engine = RationaleEngine()
 
     async def analyze(
         self,
@@ -64,17 +69,42 @@ class WhatIfEngine:
                 if mode == "image"
                 else result.text.analysis_text or result.text.output
             )
-            text_delta = 1.0 - similarity_ratio(baseline_output, result_output)
             prompt_delta = 1.0 - similarity_ratio(prompt, plan.prompt_variant)
-            score = round(clamp(plan.weight * 0.5 + text_delta * 0.35 + prompt_delta * 0.15, 0.0, 1.0), 2)
+            diff_result = (
+                self.image_diff_engine.compare(
+                    baseline_analysis=baseline_output,
+                    candidate_analysis=result_output,
+                    prompt=prompt,
+                )
+                if mode == "image"
+                else self.text_diff_engine.compare(
+                    baseline_text=baseline_output,
+                    candidate_text=result_output,
+                    prompt=prompt,
+                )
+            )
+            secondary_delta = (
+                diff_result.prompt_alignment_shift
+                if mode == "image"
+                else diff_result.prompt_overlap_shift
+            )
+            score = self.counterfactual_engine.score_effect(
+                plan_weight=plan.weight,
+                output_delta=diff_result.score,
+                prompt_delta=prompt_delta,
+                secondary_delta=secondary_delta,
+            )
             impact_scores[plan.removed] = round(score * 100, 2)
             variations.append(
                 WhatIfVariation(
                     removed=plan.removed,
                     impact=self._impact_label(score),
-                    difference=trim_text(
-                        f"{plan.explanation} The variant changed the {mode} response by about {round(score * 100)}%.",
-                        500,
+                    difference=self.rationale_engine.describe_variation(
+                        removed=plan.removed,
+                        mode=mode,
+                        base_explanation=plan.explanation,
+                        diff_summary=diff_result.summary,
+                        score=score,
                     ),
                     prompt_variant=plan.prompt_variant,
                     score=score,

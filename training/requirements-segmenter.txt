@@ -1,0 +1,6 @@
+transformers>=4.46,<5.0
+datasets>=3.0,<4.0
+torch>=2.4,<3.0
+accelerate>=0.34,<2.0
+seqeval>=1.2,<2.0
+protobuf>=5.27,<7.0

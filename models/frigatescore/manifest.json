@@ -1,0 +1,180 @@
+{
+  "model_name": "FrigateScore Linear",
+  "model_version": "0.1.0",
+  "created_at": "2026-03-31T02:57:04.764905+00:00",
+  "feature_stats": {
+    "prompt_token_count": {
+      "mean": 0.22624678,
+      "std": 0.22834878
+    },
+    "prompt_unique_ratio": {
+      "mean": 0.91694062,
+      "std": 0.11306614
+    },
+    "prompt_avg_token_length": {
+      "mean": 0.40740191,
+      "std": 0.06621579
+    },
+    "prompt_clause_density": {
+      "mean": 0.39540468,
+      "std": 0.30288974
+    },
+    "prompt_structure_score": {
+      "mean": 0.33662015,
+      "std": 0.32806937
+    },
+    "prompt_has_numbers": {
+      "mean": 0.21064219,
+      "std": 0.40776471
+    },
+    "prompt_has_style_hint": {
+      "mean": 0.00305982,
+      "std": 0.05523091
+    },
+    "prompt_has_constraint_hint": {
+      "mean": 0.04138214,
+      "std": 0.19917244
+    },
+    "prompt_has_environment_hint": {
+      "mean": 0.04063584,
+      "std": 0.19744511
+    },
+    "segment_object_present": {
+      "mean": 1.0,
+      "std": 1.0
+    },
+    "segment_attribute_count": {
+      "mean": 0.0,
+      "std": 1.0
+    },
+    "segment_style_count": {
+      "mean": 0.0,
+      "std": 1.0
+    },
+    "segment_environment_count": {
+      "mean": 0.0,
+      "std": 1.0
+    },
+    "segment_lighting_count": {
+      "mean": 0.0,
+      "std": 1.0
+    },
+    "reference_image_used": {
+      "mean": 0.0,
+      "std": 1.0
+    },
+    "output_token_count": {
+      "mean": 0.35358316,
+      "std": 0.31117421
+    },
+    "output_prompt_overlap": {
+      "mean": 0.43577503,
+      "std": 0.27259586
+    },
+    "output_similarity": {
+      "mean": 0.19632086,
+      "std": 0.19423475
+    },
+    "mode_is_image": {
+      "mean": 0.0,
+      "std": 1.0
+    }
+  },
+  "targets": {
+    "trust": {
+      "bias": 73.29769264,
+      "weights": {
+        "prompt_token_count": 1.37159743,
+        "prompt_unique_ratio": -0.21007669,
+        "prompt_avg_token_length": 0.26603364,
+        "prompt_clause_density": 1.89431753,
+        "prompt_structure_score": -0.34354596,
+        "prompt_has_numbers": -0.16416191,
+        "prompt_has_style_hint": -0.03881896,
+        "prompt_has_constraint_hint": -0.12767997,
+        "prompt_has_environment_hint": -0.05895434,
+        "segment_object_present": 0.0,
+        "segment_attribute_count": 0.0,
+        "segment_style_count": 0.0,
+        "segment_environment_count": 0.0,
+        "segment_lighting_count": 0.0,
+        "reference_image_used": 0.0,
+        "output_token_count": 0.20213498,
+        "output_prompt_overlap": 5.87769665,
+        "output_similarity": 0.23985439,
+        "mode_is_image": 0.0
+      }
+    },
+    "clarity": {
+      "bias": 77.68447815,
+      "weights": {
+        "prompt_token_count": 1.32952754,
+        "prompt_unique_ratio": 0.27376272,
+        "prompt_avg_token_length": -0.13876232,
+        "prompt_clause_density": 0.76934564,
+        "prompt_structure_score": 6.51119407,
+        "prompt_has_numbers": -0.40283919,
+        "prompt_has_style_hint": -0.11078406,
+        "prompt_has_constraint_hint": -0.25948133,
+        "prompt_has_environment_hint": -0.09647553,
+        "segment_object_present": 0.0,
+        "segment_attribute_count": 0.0,
+        "segment_style_count": 0.0,
+        "segment_environment_count": 0.0,
+        "segment_lighting_count": 0.0,
+        "reference_image_used": 0.0,
+        "output_token_count": 1.1450278,
+        "output_prompt_overlap": -1.01083498,
+        "output_similarity": 0.88934695,
+        "mode_is_image": 0.0
+      }
+    },
+    "quality": {
+      "bias": 78.74645826,
+      "weights": {
+        "prompt_token_count": 1.18206476,
+        "prompt_unique_ratio": 0.26772769,
+        "prompt_avg_token_length": 0.30728332,
+        "prompt_clause_density": -0.67143497,
+        "prompt_structure_score": 0.11628545,
+        "prompt_has_numbers": -0.03102784,
+        "prompt_has_style_hint": 0.05463149,
+        "prompt_has_constraint_hint": -0.00715062,
+        "prompt_has_environment_hint": 0.05555761,
+        "segment_object_present": 0.0,
+        "segment_attribute_count": 0.0,
+        "segment_style_count": 0.0,
+        "segment_environment_count": 0.0,
+        "segment_lighting_count": 0.0,
+        "reference_image_used": 0.0,
+        "output_token_count": 3.30353639,
+        "output_prompt_overlap": 6.59505338,
+        "output_similarity": -1.86430675,
+        "mode_is_image": 0.0
+      }
+    }
+  },
+  "metrics": {
+    "samples": {
+      "total": 66997,
+      "train": 53598,
+      "validation": 13399
+    },
+    "mae": {
+      "trust": 0.9884,
+      "clarity": 4.461,
+      "quality": 2.7725
+    },
+    "r2": {
+      "trust": 0.95,
+      "clarity": 0.6894,
+      "quality": 0.8815
+    }
+  },
+  "training": {
+    "alpha": 0.35,
+    "validation_ratio": 0.2,
+    "seed": 42,
+    "input": "data\\public\\processed\\frigate_score_labels.csv"
+  }
+}

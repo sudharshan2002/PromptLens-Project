@@ -28,6 +28,13 @@ def _default_sqlite_path() -> Path:
     return BASE_DIR / "metrics.db"
 
 
+def _first_existing_path(*candidates: Path) -> Path:
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 @dataclass(frozen=True)
 class Settings:
     """All the environment variables we need to run."""
@@ -57,6 +64,10 @@ class Settings:
     enable_session_history: bool
     supabase_url: str | None
     supabase_service_role_key: str | None
+    enable_ml_scorer: bool
+    ml_model_manifest_path: Path
+    ml_segmenter_model_path: Path
+    ml_score_regressor_model_path: Path
 
 
 @lru_cache(maxsize=1)
@@ -64,6 +75,28 @@ def get_settings() -> Settings:
     """Grab the settings and cache them so we don't spam env reads."""
     cors_origins = os.getenv("CORS_ORIGINS", "*")
     db_path = os.getenv("SQLITE_DB_PATH", str(_default_sqlite_path()))
+    models_root = BASE_DIR.parent / "models"
+    ml_manifest_path = os.getenv(
+        "ML_MODEL_MANIFEST_PATH",
+        str(models_root / "frigatescore" / "manifest.json"),
+    )
+    default_segmenter_path = _first_existing_path(
+        models_root / "frigate-segmenter-epoch1-baseline",
+        models_root / "frigate-segmenter",
+    )
+    ml_segmenter_path = os.getenv(
+        "ML_SEGMENTER_MODEL_PATH",
+        str(default_segmenter_path),
+    )
+    default_regressor_path = _first_existing_path(
+        models_root / "frigatescore-regressor-distilbert-goldmix-cpu",
+        models_root / "frigatescore-regressor-distilbert-gold-cpu",
+        models_root / "frigatescore-regressor-distilbert-v1",
+    )
+    ml_score_regressor_path = os.getenv(
+        "ML_SCORE_REGRESSOR_MODEL_PATH",
+        str(default_regressor_path),
+    )
 
     return Settings(
         app_name=os.getenv("APP_NAME", "Frigate Backend"),
@@ -91,4 +124,8 @@ def get_settings() -> Settings:
         enable_session_history=_parse_bool(os.getenv("ENABLE_SESSION_HISTORY"), default=False),
         supabase_url=os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL"),
         supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY"),
+        enable_ml_scorer=_parse_bool(os.getenv("ENABLE_ML_SCORER"), default=True),
+        ml_model_manifest_path=Path(ml_manifest_path),
+        ml_segmenter_model_path=Path(ml_segmenter_path),
+        ml_score_regressor_model_path=Path(ml_score_regressor_path),
     )

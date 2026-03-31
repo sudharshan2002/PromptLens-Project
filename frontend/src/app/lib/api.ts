@@ -43,6 +43,16 @@ export type PromptExplanationSummary = {
   improvement_tip: string;
 };
 
+export type ScoreDetails = {
+  trust: number;
+  clarity: number;
+  quality: number;
+  source: "heuristic" | "manifest-linear" | "transformer-regressor";
+  model_name?: string | null;
+  model_version?: string | null;
+  notes?: string | null;
+};
+
 export type SegmentChange = {
   label: string;
   before: string;
@@ -75,6 +85,7 @@ export type GenerateResponse = ApiFallbackMeta & {
   mapping: TokenImpact[];
   segments: PromptSegment[];
   explanation_summary: PromptExplanationSummary;
+  score_details?: ScoreDetails | null;
   reference_image_used: boolean;
   session: SessionRecord;
 };
@@ -82,6 +93,7 @@ export type GenerateResponse = ApiFallbackMeta & {
 export type AnalyzeResponse = ApiFallbackMeta & {
   segments: PromptSegment[];
   explanation_summary: PromptExplanationSummary;
+  score_details?: ScoreDetails | null;
 };
 
 export type WhatIfResponse = ApiFallbackMeta & {
@@ -181,7 +193,7 @@ function isDemoModeEnabled() {
 }
 
 function demoModeMessage() {
-  return "Demo mode is enabled, so Frigate is showing seeded preview data.";
+  return "Local fallback mode is enabled, so Frigate is showing seeded local data.";
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -250,7 +262,7 @@ function trimText(value: string, limit = 140) {
 
 function normalizePrompt(prompt: string, referenceImage?: ReferenceImageInput | null) {
   if (prompt.trim()) return prompt.trim();
-  if (referenceImage) return "Reference-image-driven generation";
+  if (referenceImage) return "Reference-guided run";
   return "Untitled prompt";
 }
 
@@ -322,8 +334,8 @@ function buildMockTextOutput(prompt: string, variant = "base", referenceImageNam
   const referenceLine = referenceImageName ? `The attached reference image keeps the visual direction anchored in ${referenceImageName}.` : null;
 
   return [
-    "Frigate gives AI teams a clearer way to shape prompts, inspect outputs, and move from experimentation to release with confidence.",
-    `Prompt mapping keeps the strongest signals visible, while trust scoring and guided comparison make ${focus} easier to review as a team.`,
+    "Frigate helps teams shape prompts, inspect outputs, and compare revisions with clearer control.",
+    `Prompt mapping keeps the strongest signals visible, while trust scoring and guided comparison make ${focus} easier to review.`,
     referenceLine,
     closer,
   ].filter(Boolean).join("\n\n");
@@ -544,7 +556,7 @@ function createFallbackSession({
     difference_summary: differenceSummary,
     created_at: createdAt || new Date().toISOString(),
     isFallback: true,
-    fallbackMessage: "Live services are unavailable, so Frigate is showing preview data.",
+    fallbackMessage: "Live services are unavailable, so Frigate is showing local sample data.",
   };
 }
 
@@ -597,7 +609,7 @@ function ensureFallbackSessions(actorKey: string) {
       mode: "image",
       source: "composer",
       output: buildMockImageOutput("Design a Frigate launch hero with prompt mapping overlays and a calm cockpit mood", "Launch Hero"),
-      provider: "preview-image",
+      provider: "local-image",
       createdAt: shiftMinutes(14),
     }),
     createFallbackSession({
@@ -605,15 +617,15 @@ function ensureFallbackSessions(actorKey: string) {
       mode: "text",
       source: "composer",
       output: buildMockTextOutput("Write a product intro for Frigate focused on trust scoring and explainability"),
-      provider: "preview-text",
+      provider: "local-text",
       createdAt: shiftMinutes(37),
     }),
     createFallbackSession({
       prompt: "Compare a brighter editorial Frigate dashboard against a calm darker one",
       mode: "image",
       source: "what-if",
-      output: buildMockImageOutput("Compare a brighter editorial Frigate dashboard against a calm darker one", "Comparison Preview"),
-      provider: "preview-image",
+      output: buildMockImageOutput("Compare a brighter editorial Frigate dashboard against a calm darker one", "Comparison Sample"),
+      provider: "local-image",
       createdAt: shiftMinutes(86),
       differenceSummary: "Variant testing stayed stable while shifting the visual tone.",
     }),
@@ -716,7 +728,7 @@ function buildDashboardFromSessions(
       system_status: [
         {
           label: "Storage",
-          value: systemMode === "supabase" ? "Supabase" : "Preview Cache",
+          value: systemMode === "supabase" ? "Supabase" : "Local Cache",
           status: systemMode === "supabase" ? "Ready" : "Fallback",
         },
         {
@@ -795,7 +807,7 @@ function buildDashboardFromSessions(
     system_status: [
       {
         label: "Storage",
-        value: systemMode === "supabase" ? "Supabase" : "Preview Cache",
+        value: systemMode === "supabase" ? "Supabase" : "Local Cache",
         status: systemMode === "supabase" ? "Connected" : "Fallback",
       },
       {
@@ -824,7 +836,7 @@ function fallbackMessageFrom(error: unknown) {
     return demoModeMessage();
   }
   const reason = error instanceof Error ? error.message : "Unable to reach the backend.";
-  return `Live services are unavailable, so Frigate is showing preview data. ${reason}`;
+  return `Live services are unavailable, so Frigate is showing local sample data. ${reason}`;
 }
 
 function buildGenerateFallback(
@@ -835,7 +847,7 @@ function buildGenerateFallback(
   const normalizedPrompt = normalizePrompt(payload.prompt, payload.reference_image);
   const output =
     payload.mode === "image"
-      ? buildMockImageOutput(normalizedPrompt, "Composer Preview", payload.reference_image?.name || undefined)
+      ? buildMockImageOutput(normalizedPrompt, "Composer Sample", payload.reference_image?.name || undefined)
       : buildMockTextOutput(normalizedPrompt, "base", payload.reference_image?.name || undefined);
   const segments = buildSegments(payload.prompt, payload.mode, payload.reference_image);
   const session = createFallbackSession({
@@ -843,8 +855,9 @@ function buildGenerateFallback(
     mode: payload.mode,
     source: payload.source || "composer",
     output,
-    provider: payload.mode === "image" ? "preview-image" : "preview-text",
+    provider: payload.mode === "image" ? "local-image" : "local-text",
   });
+  const scores = estimateScores(normalizedPrompt, output, payload.mode);
 
   session.fallbackMessage = fallbackMessage;
   registerFallbackSession(actorKey, session);
@@ -856,6 +869,14 @@ function buildGenerateFallback(
     mapping: buildMappingFromSegments(segments),
     segments,
     explanation_summary: buildExplanationSummary(payload.prompt, payload.mode, payload.reference_image),
+    score_details: {
+      trust: scores.trust,
+      clarity: scores.clarity,
+      quality: scores.quality,
+      source: "heuristic",
+      model_name: "Built-in scorer",
+      notes: "Fallback scoring is active because the live backend is unavailable.",
+    },
     reference_image_used: Boolean(payload.reference_image),
     session,
     isFallback: true,
@@ -892,7 +913,7 @@ function buildCompareFallback(
     mode: payload.mode,
     source: "what-if",
     output: originalOutput,
-    provider: payload.mode === "image" ? "preview-image" : "preview-text",
+    provider: payload.mode === "image" ? "local-image" : "local-text",
     differenceSummary: difference,
   });
   const modifiedSession = createFallbackSession({
@@ -900,7 +921,7 @@ function buildCompareFallback(
     mode: payload.mode,
     source: "what-if",
     output: modifiedOutput,
-    provider: payload.mode === "image" ? "preview-image" : "preview-text",
+    provider: payload.mode === "image" ? "local-image" : "local-text",
     differenceSummary: difference,
   });
 
@@ -1145,9 +1166,18 @@ export const api = {
   async analyze(payload: { prompt: string; mode: GenerationMode }) {
     if (isDemoModeEnabled()) {
       const segments = buildSegments(payload.prompt, payload.mode);
+      const scores = estimateScores(payload.prompt, payload.prompt, payload.mode);
       return {
         segments,
         explanation_summary: buildExplanationSummary(payload.prompt, payload.mode),
+        score_details: {
+          trust: scores.trust,
+          clarity: scores.clarity,
+          quality: scores.quality,
+          source: "heuristic" as const,
+          model_name: "Built-in scorer",
+          notes: "Fallback scoring is active because the live backend is unavailable.",
+        },
         isFallback: true,
         fallbackMessage: demoModeMessage(),
       };
@@ -1160,9 +1190,18 @@ export const api = {
       });
     } catch (error) {
       const segments = buildSegments(payload.prompt, payload.mode);
+      const scores = estimateScores(payload.prompt, payload.prompt, payload.mode);
       return {
         segments,
         explanation_summary: buildExplanationSummary(payload.prompt, payload.mode),
+        score_details: {
+          trust: scores.trust,
+          clarity: scores.clarity,
+          quality: scores.quality,
+          source: "heuristic" as const,
+          model_name: "Built-in scorer",
+          notes: "Fallback scoring is active because the live backend is unavailable.",
+        },
         isFallback: true,
         fallbackMessage: fallbackMessageFrom(error),
       };

@@ -24,10 +24,11 @@ from app.services.generator import GenerationEngine
 from app.services.heatmap_engine import HeatmapEngine
 from app.services.metrics_engine import MetricsEngine
 from app.services.metrics_service import MetricsService
+from app.services.prompt_ml_scorer import PromptMLScorer
 from app.services.segmenter import PromptSegmenter
 from app.services.session_service import SessionService
 from app.services.whatif_engine import WhatIfEngine
-from app.utils.helpers import estimate_generation_scores, quality_label_from_score, summarize_prompt_difference, tokenize_text
+from app.utils.helpers import quality_label_from_score, summarize_prompt_difference, tokenize_text
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ class XAIOrchestrator:
         metrics_engine: MetricsEngine,
         metrics_service: MetricsService,
         session_service: SessionService,
+        prompt_ml_scorer: PromptMLScorer,
     ) -> None:
         self.generator = generator
         self.segmenter = segmenter
@@ -55,6 +57,7 @@ class XAIOrchestrator:
         self.metrics_engine = metrics_engine
         self.metrics_service = metrics_service
         self.session_service = session_service
+        self.prompt_ml_scorer = prompt_ml_scorer
 
     async def generate(
         self,
@@ -121,10 +124,12 @@ class XAIOrchestrator:
             total_latency_ms=total_latency_ms,
         )
 
-        trust_score, clarity_score, quality_score = estimate_generation_scores(
+        score_details = self.prompt_ml_scorer.score(
             prompt=prompt_for_session,
             output=analysis_source or primary_output,
             mode=payload.mode,
+            segment_profile=segment_profile,
+            reference_image_used=reference_image_used,
         )
         session_payload = SessionCreate(
             prompt=prompt_for_session,
@@ -135,10 +140,10 @@ class XAIOrchestrator:
             provider=primary_provider,
             response_time_ms=total_latency_ms,
             token_count=len(tokenize_text(prompt_for_session)),
-            trust_score=trust_score,
-            clarity_score=clarity_score,
-            quality_score=quality_score,
-            quality_label=quality_label_from_score(quality_score),
+            trust_score=score_details.trust,
+            clarity_score=score_details.clarity,
+            quality_score=score_details.quality,
+            quality_label=quality_label_from_score(score_details.quality),
         )
         session = self.session_service.create_session(session_payload)
 
@@ -149,7 +154,7 @@ class XAIOrchestrator:
                 response_time_ms=total_latency_ms,
                 endpoint="/generate",
                 mode=payload.mode,
-                trust_score=trust_score / 100,
+                trust_score=score_details.trust / 100,
                 confidence_score=metrics.confidence,
                 complexity_score=metrics.complexity,
                 impact_score=self.metrics_engine.average_impact_score(what_if),
@@ -167,6 +172,7 @@ class XAIOrchestrator:
             mapping=analysis.mapping,
             segments=analysis.segments,
             explanation_summary=analysis.summary,
+            score_details=score_details,
             reference_image_used=reference_image_used,
             session=session,
             generated=(
@@ -258,15 +264,19 @@ class XAIOrchestrator:
         original_latency = original_primary.latency_ms
         modified_latency = modified_primary.latency_ms
 
-        original_scores = estimate_generation_scores(
-            original_prompt,
-            original_primary.analysis_text or original_output,
-            payload.mode,
+        original_score_details = self.prompt_ml_scorer.score(
+            prompt=original_prompt,
+            output=original_primary.analysis_text or original_output,
+            mode=payload.mode,
+            segment_profile=original_profile,
+            reference_image_used=payload.original_reference_image is not None,
         )
-        modified_scores = estimate_generation_scores(
-            modified_prompt,
-            modified_primary.analysis_text or modified_output,
-            payload.mode,
+        modified_score_details = self.prompt_ml_scorer.score(
+            prompt=modified_prompt,
+            output=modified_primary.analysis_text or modified_output,
+            mode=payload.mode,
+            segment_profile=modified_profile,
+            reference_image_used=payload.modified_reference_image is not None,
         )
         original_session_payload = SessionCreate(
             prompt=original_prompt,
@@ -277,10 +287,10 @@ class XAIOrchestrator:
             provider=original_provider,
             response_time_ms=original_latency,
             token_count=len(tokenize_text(original_prompt)),
-            trust_score=original_scores[0],
-            clarity_score=original_scores[1],
-            quality_score=original_scores[2],
-            quality_label=quality_label_from_score(original_scores[2]),
+            trust_score=original_score_details.trust,
+            clarity_score=original_score_details.clarity,
+            quality_score=original_score_details.quality,
+            quality_label=quality_label_from_score(original_score_details.quality),
             difference_summary=difference,
         )
         modified_session_payload = SessionCreate(
@@ -292,10 +302,10 @@ class XAIOrchestrator:
             provider=modified_provider,
             response_time_ms=modified_latency,
             token_count=len(tokenize_text(modified_prompt)),
-            trust_score=modified_scores[0],
-            clarity_score=modified_scores[1],
-            quality_score=modified_scores[2],
-            quality_label=quality_label_from_score(modified_scores[2]),
+            trust_score=modified_score_details.trust,
+            clarity_score=modified_score_details.clarity,
+            quality_score=modified_score_details.quality,
+            quality_label=quality_label_from_score(modified_score_details.quality),
             difference_summary=difference,
         )
         original_session = self.session_service.create_session(original_session_payload)
@@ -308,7 +318,7 @@ class XAIOrchestrator:
                 response_time_ms=original_latency,
                 endpoint="/what-if",
                 mode=payload.mode,
-                trust_score=original_scores[0] / 100,
+                trust_score=original_score_details.trust / 100,
                 provider=original_provider,
                 request_id=request_id,
             )
@@ -320,7 +330,7 @@ class XAIOrchestrator:
                 response_time_ms=modified_latency,
                 endpoint="/what-if",
                 mode=payload.mode,
-                trust_score=modified_scores[0] / 100,
+                trust_score=modified_score_details.trust / 100,
                 provider=modified_provider,
                 request_id=request_id,
             )
@@ -358,6 +368,7 @@ class XAIOrchestrator:
         """Perform real-time NLP segmentation and explanation summary."""
         if self.generator.nlp_analyzer is not None:
             segments = self.generator.nlp_analyzer.analyze_prompt(payload.prompt)
+            profile = self.segmenter.segment(payload.prompt, reference_image_used=False)
         else:
             profile = self.segmenter.segment(payload.prompt, reference_image_used=False)
             segments = self.explainer.analyze_prompt(
@@ -367,6 +378,14 @@ class XAIOrchestrator:
                 segment_profile=profile,
                 reference_image_used=False,
             ).segments
+
+        score_details = self.prompt_ml_scorer.score(
+            prompt=payload.prompt,
+            output=payload.prompt,
+            mode=payload.mode,
+            segment_profile=profile,
+            reference_image_used=False,
+        )
         
         # Build a live explanation summary
         strongest = segments[0].label.lower() if segments else "subject"
@@ -379,6 +398,7 @@ class XAIOrchestrator:
         return AnalyzeResponse(
             segments=segments,
             explanation_summary=summary,
+            score_details=score_details,
         )
 
     @staticmethod

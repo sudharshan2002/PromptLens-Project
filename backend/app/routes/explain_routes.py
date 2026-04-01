@@ -1,4 +1,4 @@
-"""Backward-compatible explain route export."""
+"""Re-export explain routes."""
 
 from app.api.routes import router
 

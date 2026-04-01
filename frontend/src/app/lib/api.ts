@@ -221,7 +221,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         detail = parsed.detail;
       }
     } catch {
-      // Fall back to the raw response body when the backend did not return JSON.
+      // not JSON, use raw text
     }
     throw new Error(detail || `Request failed with status ${response.status}`);
   }
@@ -980,7 +980,6 @@ export const api = {
           };
         }
       } catch {
-        // Keep the local fallback cache when Supabase is unavailable.
       }
       return fallback;
     }
@@ -1027,7 +1026,6 @@ export const api = {
           };
         }
       } catch {
-        // Keep the local fallback cache when Supabase is unavailable.
       }
       return fallback;
     }
@@ -1063,7 +1061,6 @@ export const api = {
           };
         }
       } catch {
-        // Keep the local fallback cache when Supabase is unavailable.
       }
       return fallback;
     }
@@ -1125,7 +1122,6 @@ export const api = {
           };
         }
       } catch {
-        // Keep the local fallback cache when Supabase is unavailable.
       }
       return fallback;
     }

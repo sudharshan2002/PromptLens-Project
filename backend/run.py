@@ -1,4 +1,4 @@
-"""Simple script to run the backend on your machine."""
+"""Dev server entry point."""
 
 from __future__ import annotations
 

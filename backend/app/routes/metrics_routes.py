@@ -1,4 +1,4 @@
-"""Backward-compatible metrics route export."""
+"""Re-export metrics routes."""
 
 from app.api.routes import router
 

@@ -1,4 +1,4 @@
-"""Shared helper functions used across the backend."""
+"""Common helpers."""
 
 from __future__ import annotations
 
@@ -223,7 +223,7 @@ def build_mock_image_output(prompt: str) -> str:
 
         title_font = ImageFont.load_default()
         body_font = ImageFont.load_default()
-    except Exception:  # pragma: no cover - pillow default font load is stable
+    except Exception:  # pragma: no cover
         title_font = None
         body_font = None
 

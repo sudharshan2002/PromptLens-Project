@@ -1,4 +1,4 @@
-"""Human-readable explanation generator for prompt impact analysis."""
+"""Builds short text rationales from diff results."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from app.utils.helpers import trim_text
 
 
 class RationaleEngine:
-    """Turn measured deltas into concise user-facing rationale strings."""
+    """Format measured deltas into user-facing rationale strings."""
 
     def describe_variation(
         self,

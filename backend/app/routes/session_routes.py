@@ -1,4 +1,4 @@
-"""Backward-compatible session route export."""
+"""Re-export session routes."""
 
 from app.api.routes import router
 

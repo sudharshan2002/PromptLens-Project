@@ -1,4 +1,4 @@
-"""Coordinate the main prompt analysis and generation flow."""
+"""Main orchestrator tying generation, segmentation, and scoring together."""
 
 from __future__ import annotations
 

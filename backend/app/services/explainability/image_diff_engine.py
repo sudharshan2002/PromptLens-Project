@@ -1,4 +1,4 @@
-"""Difference analysis for generated image responses using prompt-side proxies."""
+"""Image diff scoring using text analysis and prompt overlap."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ class ImageDiffResult:
 
 
 class ImageDiffEngine:
-    """Estimate image variation using generation analysis text and prompt alignment."""
+    """Compare two image analysis texts and produce a diff score."""
 
     def compare(self, *, baseline_analysis: str, candidate_analysis: str, prompt: str) -> ImageDiffResult:
         similarity = similarity_ratio(baseline_analysis, candidate_analysis)

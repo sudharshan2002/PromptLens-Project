@@ -33,7 +33,7 @@ except Exception:  # pragma: no cover
 
 @dataclass(frozen=True)
 class ProviderGenerationResult:
-    """Standardized chunk of data we get back when a model finishes."""
+    """Result from a single provider generation call."""
 
     output: str
     provider: str
@@ -88,7 +88,7 @@ class GenerationEngine:
                 self._hf_client = InferenceClient(
                     api_key=settings.hf_api_token,
                 )
-            except Exception as exc:  # pragma: no cover - defensive client init
+            except Exception as exc:  # pragma: no cover
                 logger.warning("Unable to initialize Hugging Face client: %s", exc)
 
     async def generate_multimodal(
@@ -143,7 +143,7 @@ class GenerationEngine:
         output = ""
         provider_id = ""
 
-        # 1. Primary: Hugging Face (Qwen)
+        # Try HF first
         if self._hf_client is not None:
             try:
                 candidate = await asyncio.to_thread(self._run_hf_chat_completion, effective_prompt or "reference-image-led draft")
@@ -153,7 +153,7 @@ class GenerationEngine:
             except Exception as exc:  # pragma: no cover
                 logger.warning("HF chat completion failed, trying Pollinations: %s", exc)
 
-        # 2. Secondary: Pollinations (Free, reliable)
+        # Pollinations fallback
         if not output:
             try:
                 candidate = await asyncio.to_thread(self._run_pollinations_text_generation, effective_prompt)
@@ -163,7 +163,7 @@ class GenerationEngine:
             except Exception as exc:  # pragma: no cover
                 logger.warning("Pollinations text generation failed, trying Groq: %s", exc)
 
-        # 3. Tertiary: Groq
+        # Groq fallback
         if not output and self.settings.groq_api_key:
             try:
                 candidate = await asyncio.to_thread(self._run_groq_text_generation, effective_prompt)
@@ -173,7 +173,7 @@ class GenerationEngine:
             except Exception as exc:  # pragma: no cover
                 logger.warning("Groq text generation failed, falling back to mock: %s", exc)
 
-        # 4. Final: Mock
+        # Mock fallback
         if not output:
             output = build_mock_text_output(effective_prompt or "reference-image-led draft")
             provider_id = "mock-text"
@@ -230,7 +230,7 @@ class GenerationEngine:
         output = ""
         provider_id = ""
 
-        # 1. Primary: Hugging Face (Schnell is primary in settings now)
+        # Try HF first
         if self._hf_client is not None and self.settings.hf_api_token:
             if reference_image is not None:
                 try:
@@ -246,7 +246,7 @@ class GenerationEngine:
                 except Exception as exc:  # pragma: no cover
                     logger.warning("HF primary text-to-image failed, trying Pollinations: %s", exc)
 
-        # 2. Secondary: Pollinations (Free, reliable Flux)
+        # Pollinations fallback
         if not output:
             try:
                 output = await asyncio.to_thread(self._run_pollinations_image_generation, effective_prompt)
@@ -254,7 +254,7 @@ class GenerationEngine:
             except Exception as exc:  # pragma: no cover
                 logger.warning("Pollinations image generation failed, falling back to mock: %s", exc)
 
-        # 3. Final: Mock
+        # Mock fallback
         if not output:
             output = build_mock_image_output(effective_prompt or "Reference-image-led composition")
             provider_id = "mock-image"
@@ -267,7 +267,7 @@ class GenerationEngine:
         )
 
     def _run_pollinations_text_generation(self, prompt: str) -> str:
-        """Hit the Pollinations free text API and give back the raw result."""
+        """Send a prompt to Pollinations and return the raw text."""
         payload = {
             "model": "openai",
             "messages": [
@@ -289,7 +289,7 @@ class GenerationEngine:
             "temperature": 0.7,
         }
         
-        # Pollinations text API typically returns raw text directly
+
         return self._post_raw_text(
             "https://text.pollinations.ai/",
             payload,
@@ -425,7 +425,7 @@ class GenerationEngine:
 
         try:
             return await asyncio.to_thread(self._run_hf_vision_caption, reference_image)
-        except Exception as exc:  # pragma: no cover - provider fallback
+        except Exception as exc:  # pragma: no cover
             logger.warning("HF vision captioning failed: %s", exc)
             return None
 
@@ -501,9 +501,9 @@ class GenerationEngine:
             try:
                 with urlopen(request, timeout=30) as response:
                     return response.read()
-            except HTTPError as exc:  # pragma: no cover - network/provider behavior
+            except HTTPError as exc:  # pragma: no cover
                 raise RuntimeError(f"Reference image download returned HTTP {exc.code}") from exc
-            except URLError as exc:  # pragma: no cover - network/provider behavior
+            except URLError as exc:  # pragma: no cover
                 raise RuntimeError(f"Reference image download failed: {exc.reason}") from exc
 
         raise ValueError("Reference image requires either a data_url or a url")
@@ -554,10 +554,10 @@ class GenerationEngine:
         try:
             with urlopen(request, timeout=timeout) as response:
                 body = response.read().decode("utf-8")
-        except HTTPError as exc:  # pragma: no cover - network/provider behavior
+        except HTTPError as exc:  # pragma: no cover
             error_body = exc.read().decode("utf-8", errors="ignore")
             raise RuntimeError(f"Provider returned HTTP {exc.code}: {error_body}") from exc
-        except URLError as exc:  # pragma: no cover - network/provider behavior
+        except URLError as exc:  # pragma: no cover
             raise RuntimeError(f"Provider request failed: {exc.reason}") from exc
 
         return json.loads(body)

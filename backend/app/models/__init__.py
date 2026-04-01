@@ -1,1 +1,1 @@
-"""Pydantic models used by the backend."""
+"""Model definitions."""

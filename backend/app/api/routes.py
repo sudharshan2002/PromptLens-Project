@@ -91,7 +91,7 @@ async def generate_content(payload: GenerateRequest, request: Request) -> Genera
     except ValueError as exc:
         logger.info("Generation rejected: %s", exc)
         raise _validation_error(exc) from exc
-    except Exception as exc:  # pragma: no cover - defensive API guard
+    except Exception as exc:  # pragma: no cover
         logger.exception("Generation failed")
         raise _internal_error("Generation failed. Please try again.") from exc
 
@@ -125,7 +125,7 @@ async def what_if_analysis(payload: WhatIfRequest, request: Request) -> WhatIfRe
     except ValueError as exc:
         logger.info("What-if analysis rejected: %s", exc)
         raise _validation_error(exc) from exc
-    except Exception as exc:  # pragma: no cover - defensive API guard
+    except Exception as exc:  # pragma: no cover
         logger.exception("What-if analysis failed")
         raise _internal_error("What-if analysis failed. Please try again.") from exc
 
@@ -149,7 +149,7 @@ async def explain_prompt(payload: ExplainRequest, request: Request) -> ExplainRe
     except ValueError as exc:
         logger.info("Explainability mapping rejected: %s", exc)
         raise _validation_error(exc) from exc
-    except Exception as exc:  # pragma: no cover - defensive API guard
+    except Exception as exc:  # pragma: no cover
         logger.exception("Explainability mapping failed")
         raise _internal_error("Explainability mapping failed. Please try again.") from exc
 
@@ -165,7 +165,7 @@ async def create_metric(payload: MetricCreateRequest, request: Request) -> Metri
     except ValueError as exc:
         logger.info("Metric storage rejected: %s", exc)
         raise _validation_error(exc) from exc
-    except Exception as exc:  # pragma: no cover - defensive API guard
+    except Exception as exc:  # pragma: no cover
         logger.exception("Metric storage failed")
         raise _internal_error("Metric storage failed. Please try again.") from exc
 
@@ -177,7 +177,7 @@ async def read_metrics(request: Request) -> MetricSummaryResponse:
 
     try:
         return service.get_summary(actor_key=_actor_key(request))
-    except Exception as exc:  # pragma: no cover - defensive API guard
+    except Exception as exc:  # pragma: no cover
         logger.exception("Metrics summary failed")
         raise _internal_error("Metrics summary failed. Please try again.") from exc
 
@@ -192,7 +192,7 @@ async def read_sessions(
 
     try:
         return service.list_sessions(limit=limit, actor_key=_actor_key(request))
-    except Exception as exc:  # pragma: no cover - defensive API guard
+    except Exception as exc:  # pragma: no cover
         logger.exception("Session history failed")
         raise _internal_error("Session history failed. Please try again.") from exc
 
@@ -204,7 +204,7 @@ async def read_dashboard(request: Request) -> DashboardMetricsResponse:
 
     try:
         return service.get_dashboard_metrics(actor_key=_actor_key(request))
-    except Exception as exc:  # pragma: no cover - defensive API guard
+    except Exception as exc:  # pragma: no cover
         logger.exception("Dashboard metrics failed")
         raise _internal_error("Dashboard metrics failed. Please try again.") from exc
 
@@ -225,6 +225,6 @@ async def delete_account(request: Request) -> DeleteAccountResponse:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:  # pragma: no cover - defensive API guard
+    except Exception as exc:  # pragma: no cover
         logger.exception("Account deletion failed")
         raise _internal_error("Account deletion failed. Please try again.") from exc

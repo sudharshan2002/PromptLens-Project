@@ -113,14 +113,14 @@ class PromptSegmenter:
         if self._trained_segmenter is not None and normalized:
             try:
                 trained_profile = self._segment_with_trained_model(normalized, reference_image_used=reference_image_used)
-            except Exception as exc:  # pragma: no cover - optional model/runtime path
+            except Exception as exc:  # pragma: no cover
                 logger.warning("Trained segmenter failed, using spaCy/heuristic fallback: %s", exc)
 
         spacy_profile: PromptSegmentProfile | None = None
         if self._nlp is not None and normalized:
             try:
                 spacy_profile = self._segment_with_spacy(normalized, reference_image_used=reference_image_used)
-            except Exception as exc:  # pragma: no cover - spaCy path depends on local env
+            except Exception as exc:  # pragma: no cover
                 logger.warning("spaCy segmentation failed, using heuristic fallback: %s", exc)
 
         heuristic_profile = self._segment_heuristically(normalized, reference_image_used=reference_image_used)
@@ -353,7 +353,7 @@ class PromptSegmenter:
 
     @staticmethod
     def _load_spacy_pipeline():
-        try:  # pragma: no cover - optional dependency
+        try:  # pragma: no cover
             import spacy
         except Exception:
             return None
@@ -374,7 +374,7 @@ class PromptSegmenter:
         if not model_path.exists():
             return None
 
-        try:  # pragma: no cover - optional dependency
+        try:  # pragma: no cover
             from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
         except Exception:
             return None

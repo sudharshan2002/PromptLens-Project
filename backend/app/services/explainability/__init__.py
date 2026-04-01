@@ -1,4 +1,4 @@
-"""Explainability service package."""
+"""Explainability sub-engines."""
 
 from app.services.explainability.counterfactual_engine import CounterfactualEngine
 from app.services.explainability.image_diff_engine import ImageDiffEngine

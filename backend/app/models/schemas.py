@@ -1,3 +1,3 @@
-"""Backward-compatible schema imports."""
+"""Re-export schema models."""
 
 from app.schemas.api import *  # noqa: F401,F403

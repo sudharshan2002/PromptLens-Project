@@ -1,4 +1,4 @@
-"""Shared prompt-scoring feature extraction used by training and backend inference."""
+"""Feature extraction for prompt scoring."""
 
 from __future__ import annotations
 

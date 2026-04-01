@@ -1,3 +1,3 @@
-"""Export all the Pydantic models."""
+"""Pydantic schema exports."""
 
 from app.schemas.api import *  # noqa: F401,F403

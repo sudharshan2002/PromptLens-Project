@@ -1,1 +1,1 @@
-"""Utility helpers for backend services."""
+"""Shared helpers."""

@@ -1,1 +1,1 @@
-"""Route package for API endpoints."""
+"""API routes."""

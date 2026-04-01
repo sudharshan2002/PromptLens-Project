@@ -1,4 +1,4 @@
-"""Shared scoring logic for prompt perturbation analysis."""
+"""Counterfactual impact scoring."""
 
 from __future__ import annotations
 

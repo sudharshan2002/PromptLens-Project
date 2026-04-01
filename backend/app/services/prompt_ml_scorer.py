@@ -155,7 +155,7 @@ class PromptMLScorer:
         if not path.exists():
             logger.info("ML score regressor not found at %s", path)
             return None
-        try:  # pragma: no cover - optional dependency
+        try:  # pragma: no cover
             import torch
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
         except Exception:

@@ -1,4 +1,4 @@
-"""Backward-compatible prompt route export."""
+"""Re-export prompt routes."""
 
 from app.api.routes import router
 

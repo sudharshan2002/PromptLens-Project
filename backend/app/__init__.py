@@ -1,4 +1,4 @@
-"""Application package entrypoints."""
+"""App package."""
 from app.main import create_app
 
 

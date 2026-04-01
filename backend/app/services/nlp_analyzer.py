@@ -9,7 +9,7 @@ class NLPAnalyzer:
         try:
             self.nlp = spacy.load("en_core_web_sm")
         except Exception:
-            # Fallback if model load fails during init
+            # spaCy model might not be installed
             self.nlp = None
 
     def analyze_prompt(self, prompt: str) -> List[PromptSegment]:
@@ -20,7 +20,7 @@ class NLPAnalyzer:
         doc = self.nlp(prompt)
         segments = []
         
-        # 1. Extract Primary Objects (Noun Chunks)
+        # Noun chunks -> objects
         for i, chunk in enumerate(doc.noun_chunks):
             segments.append(
                 PromptSegment(
@@ -33,12 +33,10 @@ class NLPAnalyzer:
                 )
             )
 
-        # 2. Extract Attributes (Adjectives)
+        # Adjectives -> attributes
         adj_index = 0
         for token in doc:
             if token.pos_ == "ADJ" and token.dep_ != "punct":
-                # Check if it's already part of a noun chunk to avoid redundancy, 
-                # but often we want them separate for specific control.
                 segments.append(
                     PromptSegment(
                         id=f"attr-{adj_index}",
@@ -51,11 +49,11 @@ class NLPAnalyzer:
                 )
                 adj_index += 1
 
-        # 3. Extract Style/Medium (Heuristic-based)
+        # Style/medium keywords
         style_keywords = ["painting", "photograph", "digital art", "sketch", "masterpiece", "isometric", "cinematic"]
         for i, token in enumerate(doc):
             if token.text.lower() in style_keywords or (token.dep_ == "prep" and token.text.lower() == "in"):
-                # Capturing prepositional style phrases like "in the style of..."
+                # Grab style phrases like "in the style of..."
                 text = token.text
                 if token.head.text.lower() in ["style", "aesthetic"]:
                    text = f"{token.text} {token.head.text}"
@@ -71,10 +69,9 @@ class NLPAnalyzer:
                     )
                 )
 
-        # 4. Extract Environment (Prepositions/Locations)
+        # Location/environment phrases
         for i, token in enumerate(doc):
             if token.pos_ == "ADP" and token.text.lower() in ["in", "at", "on", "near", "above", "below"]:
-                # Often environment starts with a preposition
                 env_text = "".join([t.text + t.whitespace_ for t in token.subtree]).strip()
                 if len(env_text.split()) > 1:
                     segments.append(
@@ -88,7 +85,7 @@ class NLPAnalyzer:
                         )
                     )
 
-        # De-duplicate and limit to the most relevant segments
+        # Dedupe and cap at 6
         seen_text = set()
         unique_segments = []
         for s in segments:
@@ -96,4 +93,4 @@ class NLPAnalyzer:
                 unique_segments.append(s)
                 seen_text.add(s.text.lower())
 
-        return unique_segments[:6]  # Limit to top 6 for UI clarity
+        return unique_segments[:6]

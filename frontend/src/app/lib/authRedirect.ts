@@ -12,8 +12,25 @@ export function resolveNextPath(search: string) {
   return normalizePath(new URLSearchParams(search).get("next"));
 }
 
+function getConfiguredAppOrigin() {
+  const currentOrigin = window.location.origin;
+  const currentHost = window.location.hostname;
+  const isLocalHost = currentHost === "localhost" || currentHost === "127.0.0.1";
+  const configuredUrl = String(import.meta.env.VITE_SITE_URL || "").trim();
+
+  if (isLocalHost && configuredUrl) {
+    try {
+      return new URL(configuredUrl).origin;
+    } catch (error) {
+      console.warn("Ignoring invalid VITE_SITE_URL while building auth callback URL.", error);
+    }
+  }
+
+  return currentOrigin;
+}
+
 export function getAuthCallbackUrl(nextPath: string) {
-  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(normalizePath(nextPath))}`;
+  return `${getConfiguredAppOrigin()}/auth/callback?next=${encodeURIComponent(normalizePath(nextPath))}`;
 }
 
 export function needsProfileSetup(user: User | null | undefined) {

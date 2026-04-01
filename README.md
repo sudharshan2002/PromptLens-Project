@@ -17,18 +17,23 @@ This project uses Supabase Auth for login and Supabase Postgres for persisted pr
 
 For local auth to work cleanly:
 
-1. In Supabase, set the site URL to `http://localhost:5173`.
-2. Add `http://localhost:5173/auth/callback` to your redirect URLs.
-3. If you deploy the frontend, add the deployed `/auth/callback` URL there too.
-4. In Google Cloud, open your OAuth 2.0 client and add your Supabase callback URL to `Authorized redirect URIs`.
+1. In Supabase, set the site URL to the exact frontend origin you actually open in the browser.
+   Local examples: `http://localhost:5173` or `http://localhost:3000`.
+2. Add that same origin's `/auth/callback` route to your redirect URLs.
+   Local examples: `http://localhost:5173/auth/callback` or `http://localhost:3000/auth/callback`.
+3. If you want local development to always build callback links against a fixed origin, set `VITE_SITE_URL` in `.env.local`.
+   The app only uses that override on `localhost` or `127.0.0.1`, so deployed domains continue using their real browser origin.
+4. If you deploy the frontend, add the deployed `/auth/callback` URL there too.
+5. In Google Cloud, open your OAuth 2.0 client and add your Supabase callback URL to `Authorized redirect URIs`.
    For this project, that is `https://culmogqueuddchdmetyt.supabase.co/auth/v1/callback`.
-5. In `Authentication -> Providers -> Google`, enable Google and paste your Google OAuth client ID and secret.
+6. In `Authentication -> Providers -> Google`, enable Google and paste your Google OAuth client ID and secret.
 
 Important:
 
-- Supabase `Redirect URLs` should contain your app routes such as `http://localhost:5173/auth/callback` or your deployed frontend callback route.
+- Supabase `Redirect URLs` should contain the exact app callback route you use locally, such as `http://localhost:5173/auth/callback` or `http://localhost:3000/auth/callback`.
 - Google `Authorized redirect URIs` should contain the Supabase Auth callback URL, not your frontend callback route.
 - `redirectTo` in `signInWithOAuth()` tells Supabase where to send the browser after Auth finishes. It does not replace the Google callback URI.
+- If Supabase cannot use your requested callback URL, it falls back to the `Site URL`. That is why a bad local setup often lands on `http://localhost:3000/#access_token=...`.
 
 After that:
 

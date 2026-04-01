@@ -343,7 +343,7 @@ function Hero() {
                   muted
                   playsInline
                   className="absolute inset-0 h-full w-full object-cover opacity-60"
-                  style={{ filter: "invert(1)" }}
+                  style={{ filter: "invert(1)", transform: "scale(1.16)" }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#D1FF00] bg-[#D1FF0020] backdrop-blur-sm transition-transform group-hover:scale-110">
@@ -395,8 +395,8 @@ function Hero() {
                 poster={homepageVideoPoster}
                 controls
                 autoPlay
-                className="w-full h-full object-contain bg-black"
-                style={{ filter: "invert(1)" }}
+                className="w-full h-full object-cover bg-black"
+                style={{ filter: "invert(1)", transform: "scale(1.12)" }}
               />
             </motion.div>
           </motion.div>

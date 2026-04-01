@@ -6,6 +6,7 @@ import { FadeSlideText, WordReveal } from "../AnimatedText";
 import { useAuth } from "../../lib/auth";
 import { getPostAuthDestination, hasAuthRedirectParams, resolveNextPath } from "../../lib/authRedirect";
 import { GrainLocal } from "../GrainOverlay";
+import { initializeSupabaseAuth } from "../../lib/supabase";
 
 const mono: React.CSSProperties = {
   fontFamily: "'Roboto Mono', monospace",
@@ -37,9 +38,35 @@ export function AuthCallbackPage() {
   const { isAuthenticated, loading, user } = useAuth();
   const nextPath = resolveNextPath(location.search);
   const [timedOut, setTimedOut] = useState(false);
+  const [initializationError, setInitializationError] = useState<string | null>(null);
   const callbackUrl = useMemo(() => new URL(window.location.href), []);
   const callbackError = useMemo(() => readCallbackError(callbackUrl), [callbackUrl]);
   const hasRedirectState = useMemo(() => hasAuthRedirectParams(callbackUrl), [callbackUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (callbackError || !hasRedirectState || isAuthenticated) {
+      return undefined;
+    }
+
+    void initializeSupabaseAuth().catch((error) => {
+      if (cancelled) {
+        return;
+      }
+
+      const message =
+        error && typeof error === "object" && "message" in error && typeof error.message === "string" && error.message.trim()
+          ? error.message
+          : "Supabase could not finish the sign-in redirect.";
+
+      setInitializationError(message);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [callbackError, hasRedirectState, isAuthenticated]);
 
   useEffect(() => {
     if (callbackError || !hasRedirectState || isAuthenticated) {
@@ -61,15 +88,18 @@ export function AuthCallbackPage() {
     navigate(getPostAuthDestination(user, nextPath), { replace: true });
   }, [isAuthenticated, navigate, nextPath, user]);
 
-  const message = callbackError
-    ? callbackError
+  const message = initializationError
+    ? initializationError
+    : callbackError
+      ? callbackError
     : !hasRedirectState
       ? "No auth callback details were found in this URL."
       : timedOut && !loading && !isAuthenticated
         ? "Supabase did not finish the sign-in handshake. Check your redirect URLs and provider settings, then try again."
         : "Finalizing your Supabase session and routing you into the workspace.";
 
-  const readyForRetry = Boolean(callbackError) || (!loading && !isAuthenticated && (timedOut || !hasRedirectState));
+  const readyForRetry =
+    Boolean(initializationError || callbackError) || (!loading && !isAuthenticated && (timedOut || !hasRedirectState));
 
   return (
     <section className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "#F5F4E7", paddingTop: 72 }}>

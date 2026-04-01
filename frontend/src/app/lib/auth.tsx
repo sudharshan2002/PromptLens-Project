@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "./supabase";
+import { initializeSupabaseAuth, supabase } from "./supabase";
 
 type AuthContextValue = {
   displayName: string | null;
@@ -54,8 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     };
 
-    void supabase.auth
-      .getSession()
+    void initializeSupabaseAuth()
+      .catch((error) => {
+        console.error("Unable to finalize Supabase auth redirect.", error);
+      })
+      .then(() => supabase.auth.getSession())
       .then(({ data, error }) => {
         if (error) {
           console.error("Unable to load Supabase session.", error);

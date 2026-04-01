@@ -46,6 +46,41 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType: "pkce",
     persistSession: true,
   },
 });
+
+let authInitializationPromise: Promise<void> | null = null;
+
+function shouldInitializeAuthSession() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const url = new URL(window.location.href);
+  const pathname = url.pathname.replace(/\/+$/, "") || "/";
+  return pathname === "/auth/callback" || hasAuthRedirectParams(url);
+}
+
+export async function initializeSupabaseAuth() {
+  if (!shouldInitializeAuthSession()) {
+    return;
+  }
+
+  if (!authInitializationPromise) {
+    authInitializationPromise = supabase.auth
+      .initialize()
+      .then(({ error }) => {
+        if (error) {
+          throw error;
+        }
+      })
+      .catch((error) => {
+        authInitializationPromise = null;
+        throw error;
+      });
+  }
+
+  await authInitializationPromise;
+}

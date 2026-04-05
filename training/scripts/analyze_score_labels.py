@@ -1,4 +1,9 @@
-"""Analyze score-label distribution and summary statistics in a CSV dataset."""
+"""Analyze score-label distribution and summary statistics in a CSV dataset.
+
+Dataset labels derived from:
+  - Stanford Alpaca (tatsu-lab/alpaca) — Taori, R. et al., 2023
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k) — Conover, M. et al., 2023
+"""
 
 from __future__ import annotations
 

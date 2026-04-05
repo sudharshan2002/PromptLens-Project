@@ -137,6 +137,16 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router, prefix=settings.api_prefix)
 
+    @app.get("/", tags=["health"])
+    async def root() -> dict[str, object]:
+        return {
+            "status": "ok",
+            "service": settings.app_name,
+            "health": "/health",
+            "api_prefix": settings.api_prefix,
+            "message": "Frigate backend is running. Supabase auth callbacks must return to the frontend /auth/callback route, not this backend origin.",
+        }
+
     @app.get("/health", tags=["health"])
     async def healthcheck() -> dict[str, str]:
         return {"status": "ok"}

@@ -1,4 +1,17 @@
-"""Download a Hugging Face dataset split and export it to a local file."""
+"""Download a Hugging Face dataset split and export it to a local file.
+
+Datasets used in this project:
+  - Stanford Alpaca (tatsu-lab/alpaca)
+    Taori, R., Gulrajani, I., Zhang, T., Dubois, Y., Li, X., Guestrin, C.,
+    Liang, P. and Hashimoto, T.B., 2023. Stanford Alpaca: An instruction-
+    following LLaMA model. https://github.com/tatsu-lab/stanford_alpaca
+
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k)
+    Conover, M., Hayes, M., Mathur, A., Xie, J., Wan, J., Shah, S.,
+    Ghodsi, A., Wendell, P., Zaharia, M. and Xin, R., 2023. Free Dolly:
+    Introducing the world's first truly open instruction-tuned LLM.
+    https://www.databricks.com/blog/2023/04/12/dolly-first-open-commercially-viable-instruction-tuned-llm
+"""
 
 from __future__ import annotations
 

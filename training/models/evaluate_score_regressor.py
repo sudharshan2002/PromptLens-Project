@@ -1,4 +1,9 @@
-"""Evaluate a trained DistilBERT score regressor on a held-out CSV file."""
+"""Evaluate a trained DistilBERT score regressor on a held-out CSV file.
+
+Evaluation data derived from:
+  - Stanford Alpaca (tatsu-lab/alpaca) — Taori, R. et al., 2023
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k) — Conover, M. et al., 2023
+"""
 
 from __future__ import annotations
 

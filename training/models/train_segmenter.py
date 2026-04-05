@@ -1,4 +1,9 @@
-"""Train a token-classification prompt segmenter from BIO-labeled JSONL data."""
+"""Train a token-classification prompt segmenter from BIO-labeled JSONL data.
+
+Training data derived from:
+  - Stanford Alpaca (tatsu-lab/alpaca) — Taori, R. et al., 2023
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k) — Conover, M. et al., 2023
+"""
 
 from __future__ import annotations
 

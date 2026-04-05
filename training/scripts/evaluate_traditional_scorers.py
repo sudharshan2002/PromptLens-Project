@@ -1,4 +1,9 @@
-"""Evaluate heuristic or linear-manifest scorers on a labeled CSV dataset."""
+"""Evaluate heuristic or linear-manifest scorers on a labeled CSV dataset.
+
+Evaluation data derived from:
+  - Stanford Alpaca (tatsu-lab/alpaca) — Taori, R. et al., 2023
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k) — Conover, M. et al., 2023
+"""
 
 from __future__ import annotations
 

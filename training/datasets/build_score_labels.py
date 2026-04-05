@@ -1,4 +1,9 @@
-"""Build a cleaner scoring dataset from normalized prompts for trust, clarity, and quality prediction."""
+"""Build a cleaner scoring dataset from normalized prompts for trust, clarity, and quality prediction.
+
+Source data derived from:
+  - Stanford Alpaca (tatsu-lab/alpaca) — Taori, R. et al., 2023
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k) — Conover, M. et al., 2023
+"""
 
 from __future__ import annotations
 

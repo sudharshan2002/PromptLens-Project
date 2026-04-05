@@ -1,4 +1,9 @@
-"""Auto-label prompts for segmentation training using the current Frigate segmenter."""
+"""Auto-label prompts for segmentation training using the current Frigate segmenter.
+
+Source data derived from:
+  - Stanford Alpaca (tatsu-lab/alpaca) — Taori, R. et al., 2023
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k) — Conover, M. et al., 2023
+"""
 
 from __future__ import annotations
 

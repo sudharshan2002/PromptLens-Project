@@ -1,4 +1,15 @@
-"""Normalize a public dataset export into Frigate's training CSV shape."""
+"""Normalize a public dataset export into Frigate's training CSV shape.
+
+Supported source datasets:
+  - Stanford Alpaca (tatsu-lab/alpaca)
+    Taori, R. et al., 2023. Stanford Alpaca: An instruction-following LLaMA
+    model. https://github.com/tatsu-lab/stanford_alpaca
+
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k)
+    Conover, M. et al., 2023. Free Dolly: Introducing the world's first
+    truly open instruction-tuned LLM.
+    https://www.databricks.com/blog/2023/04/12/dolly-first-open-commercially-viable-instruction-tuned-llm
+"""
 
 from __future__ import annotations
 

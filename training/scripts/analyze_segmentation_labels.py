@@ -1,4 +1,9 @@
-"""Analyze BIO label distribution in a segmentation JSONL dataset."""
+"""Analyze BIO label distribution in a segmentation JSONL dataset.
+
+Dataset labels derived from:
+  - Stanford Alpaca (tatsu-lab/alpaca) — Taori, R. et al., 2023
+  - Databricks Dolly 15k (databricks/databricks-dolly-15k) — Conover, M. et al., 2023
+"""
 
 from __future__ import annotations
 

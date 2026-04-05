@@ -1,3 +1,37 @@
+# Frigate: Explainable AI Platform
+
+**Final Year Project (FYP)**
+- **Student Name:** Ravichandran Sudharshan
+- **University:** University of Westminster
+- **Student ID:** 20221703
+- **Registration Number:** w1999512
+- **Course:** BSc Computer Science Hons
+
+---
+
+## Overview
+
+Frigate is a web-based platform designed to demystify generative AI models through Explainable AI (XAI) techniques. It provides users with tools to write, evaluate, and understand prompts for both text and image generation. 
+
+By analyzing the structure of prompts, providing live feedback, and visualizing the "What-If" impact of specific words, Frigate empowers users to write more effective instructions while understanding the internal priors and biases of the underlying underlying models.
+
+### Key Features
+- **Prompt Composer:** Real-time generation of images and text using integrated APIs (Groq, Hugging Face).
+- **Live Analysis:** Immediate feedback on the clarity, trust, and quality of a draft prompt.
+- **Explainability Engine:** A token-level segmenter that identifies objects, styles, environments, and lighting cues to show exactly how a prompt influenced the output.
+- **What-If Analysis:** Automated counterfactual testing that removes prompt segments to measure and visualize their structural impact on the generated result.
+- **Analytics Dashboard:** Session tracking and aggregate usage metrics powered by Supabase.
+
+---
+
+## Workspace Structure
+
+- **`frontend/`**: The React/Vite web application providing the user interface, state management, and API integrations.
+- **`backend/`**: The FastAPI Python server handling generation, metric routing, explainability scoring, and orchestrating API calls.
+- **`training/` & `models/`**: Scripts, model weights, and datasets used to curate public instruction datasets and train the prompt segmentation classification models.
+- **`supabase/`**: SQL schema and configurations for Postgres authentication and data persistence.
+
+---
 
 ## Running the code
 
